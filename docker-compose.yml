@@ -1,0 +1,40 @@
+services:
+  server:
+    build: ./server
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    networks:
+      - planner_network
+    ports:
+      - "3000:3000"
+
+  client:
+    build: ./client
+    depends_on:
+      - server
+    networks:
+      - planner_network
+    ports:
+      - "4173:4173"
+
+  proxy:
+    build: ./nginx
+    depends_on:
+      - server
+      - client
+    networks:
+      - planner_network
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"] 
+
+networks:
+  planner_network:
+    driver: bridge
+    
