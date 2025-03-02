@@ -3,10 +3,10 @@ import Box from '@mui/material/Box'
 import BottomNavigation from '@mui/material/BottomNavigation'
 import BottomNavigationAction from '@mui/material/BottomNavigationAction'
 
-import SvgMessage from '../../assets/icon/message.svg?react'
-import SvgHeart from '../../assets/icon/heart.svg?react'
-import SvgCopy from '../../assets/icon/copy.svg?react'
-import SvgProfile from '../../assets/icon/profile.svg?react'
+import SvgMessage from '../../../assets/icon/message.svg?react'
+import SvgHeart from '../../../assets/icon/heart.svg?react'
+import SvgCopy from '../../../assets/icon/copy.svg?react'
+import SvgProfile from '../../../assets/icon/profile.svg?react'
 
 
 const NavBar = () => {

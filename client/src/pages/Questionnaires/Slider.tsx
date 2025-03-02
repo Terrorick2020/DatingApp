@@ -1,7 +1,7 @@
-import SliderContent from '../components/Slider'
+import SliderContent from '../../components/Questionnaires/Slider'
 
 
-const SliderPage = () => {
+const QuestSliderPage = () => {
     return (
         <>
             <div className="slider">
@@ -11,4 +11,4 @@ const SliderPage = () => {
     )
 }
 
-export default SliderPage
+export default QuestSliderPage

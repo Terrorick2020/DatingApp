@@ -1,6 +1,6 @@
-import DetailsContent from '../components/Details'
+import DetailsContent from '../../components/Questionnaires/Details'
 
-const DetailsPage = () => {
+const QuestDetailsPage = () => {
     return (
         <>
             <div className="details">
@@ -10,4 +10,4 @@ const DetailsPage = () => {
     )
 }
 
-export default DetailsPage
+export default QuestDetailsPage

@@ -1,11 +1,17 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 
-import detailsReducer from './slices/detailsSlice'
-import scrollReducer from './slices/scrollSlice'
+import chatsReducer from './slices/chatsSlice'
+import likesReducer from './slices/likesSlice'
+import profileReducer from './slices/profileSlice'
+import questionnairesReducer from './slices/questionnairesSlice'
+import settingsReducer from './slices/settingsSlice'
 
 const rootReducer = combineReducers({
-    details: detailsReducer,
-    scroll: scrollReducer,
+    chats: chatsReducer,
+    likes: likesReducer,
+    profile: profileReducer,
+    questionnaires: questionnairesReducer,
+    settings: settingsReducer,
 })
 
 const store = configureStore({

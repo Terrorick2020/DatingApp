@@ -1,9 +1,9 @@
 import Button from '@mui/material/Button'
 
-import SvgHeartColor from '../../assets/icon/heart-color.svg?react'
-import SvgPalmHand from '../../assets/icon/palm-hand.svg?react'
-import SvgPuzzle from '../../assets/icon/puzzle.svg?react'
-import SvgGhost from '../../assets/icon/ghost.svg?react'
+import SvgHeartColor from '../../../assets/icon/heart-color.svg?react'
+import SvgPalmHand from '../../../assets/icon/palm-hand.svg?react'
+import SvgPuzzle from '../../../assets/icon/puzzle.svg?react'
+import SvgGhost from '../../../assets/icon/ghost.svg?react'
 
 
 const SliderHeader = () => {

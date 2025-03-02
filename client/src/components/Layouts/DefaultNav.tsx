@@ -12,7 +12,8 @@ import SvgOther from '../../assets/icon/other.svg?react'
 const HeadNav = () => {
     const location = useLocation()
 
-    const isSlider = appRoutes.slider === location.pathname
+    const questRoutes = appRoutes.questionnaires
+    const isSlider = questRoutes.inner.slider === location.pathname
 
     return  (
         <>
@@ -24,7 +25,7 @@ const HeadNav = () => {
                             Close
                         </Button>
                         :
-                        <NavLink to={appRoutes.slider} >
+                        <NavLink to={questRoutes.global + questRoutes.inner.slider} >
                             <Button className="btn text-fon rounded" variant="contained" startIcon={<SvgArrowLeft />}>
                                 Back
                             </Button>

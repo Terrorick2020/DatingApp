@@ -9,3 +9,4 @@ client/.env
 
 **/*.crt
 **/*.key
+**/*.pem

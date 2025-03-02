@@ -9,6 +9,14 @@ export default defineConfig({
     react(),
     svgr(),
   ],
+  server: {
+    https: {
+      key: './ssl/key.pem',
+      cert: './ssl/cert.pem',
+    },
+    host: '0.0.0.0',
+    port: 5173,
+  },
   // server: {
   //   host: '0.0.0.0',
   // },

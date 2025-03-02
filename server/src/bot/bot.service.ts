@@ -16,7 +16,7 @@ export class BotService {
             {
               text: 'К знакомствам',
               web_app: {
-                url: 'https://localhost',
+                url: 'https://192.168.56.1:5173/',
               },
             },
           ],

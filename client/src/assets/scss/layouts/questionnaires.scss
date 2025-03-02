@@ -1,0 +1,12 @@
+#questionnaires-layout {
+    width: 100%;
+
+    .outlet {
+        width: 100%;
+        overflow: auto;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+}

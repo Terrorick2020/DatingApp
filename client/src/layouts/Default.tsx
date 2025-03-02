@@ -1,23 +1,17 @@
 import { Outlet } from 'react-router-dom'
 
-import HeadNav from '../components/Layouts/HeadNav'
-import NavBar from '../components/Layouts/NavBar'
+import DefaultNav from '../components/Layouts/DefaultNav'
 
-const DefaulLayout = () => {
+const DefaultLayout = () => {
     return (
         <>  
             <div className="default">
                 <div className="block">
                     <div id="default-layout">
                         <div className="head-nav">
-                            <HeadNav />
+                            <DefaultNav />
                         </div>
-                        <div className="outlet">
-                            <Outlet />
-                        </div>
-                        <div className="nav-bar">
-                            <NavBar />
-                        </div>
+                        <Outlet />
                     </div>
                 </div>
             </div>
@@ -25,4 +19,4 @@ const DefaulLayout = () => {
     )
 }
 
-export default DefaulLayout
+export default DefaultLayout

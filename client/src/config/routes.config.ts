@@ -1,4 +1,16 @@
 export const appRoutes = {
-    slider: '/',
-    details: '/details',
+    register: {
+        global: '/register',
+        inner: {
+            preview: '',
+            lang: 'lang',
+        },
+    },
+    questionnaires: {
+        global: '/questionnaires',
+        inner: {
+            slider: '',
+            details: 'details',
+        },
+    },
 }
