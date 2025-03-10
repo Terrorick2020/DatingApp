@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button'
 
-import SvgHeartColor from '../../../assets/icon/heart-color.svg?react'
+import SvgHeartColor from '../../../assets/icon/heart-color.svg'
 import SvgPalmHand from '../../../assets/icon/palm-hand.svg?react'
 import SvgPuzzle from '../../../assets/icon/puzzle.svg?react'
 import SvgGhost from '../../../assets/icon/ghost.svg?react'
@@ -21,7 +21,13 @@ const SliderHeader = () => {
                 </Button>
             </div>
             <div className="nav-likes">
-                <Button className="text-fon rounded-light" variant="contained" startIcon={<SvgHeartColor />}>
+                <Button
+                    className="text-fon rounded-light"
+                    variant="contained"
+                    startIcon={
+                        <img src={ SvgHeartColor } alt="svg-color-hert" />
+                    }
+                >
                     0
                 </Button>
             </div>

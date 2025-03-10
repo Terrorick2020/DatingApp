@@ -4,6 +4,9 @@ export const appRoutes = {
         inner: {
             preview: '',
             lang: 'lang',
+            fillQuest: 'filling-questionnaire',
+            geo: 'geo',
+            eveningPlans: 'evening-plans',
         },
     },
     questionnaires: {

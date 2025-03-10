@@ -1,18 +1,18 @@
 import { Outlet } from 'react-router-dom'
 
+import HeadNav from '../components/Layouts/HeadNav'
 import NavBar from '../components/Layouts/QuestLayout/NavBar'
 
 
 const QuestLayout = () => {
     return (
         <>
-            <div id="questionnaires-layout">
-                <div className="outlet">
+            <div className="quest-layout">
+                <HeadNav />
+                <div className="quest-outlet">
                     <Outlet />
                 </div>
-                <div className="nav-bar">
-                    <NavBar />
-                </div>
+                <NavBar />
             </div>
         </>
     )

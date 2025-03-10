@@ -3,9 +3,15 @@
 @use "./layouts/questionnaires.scss";
 
 @use "./ui/MuiChip.scss";
-@use "./ui/Button.scss";
+@use "./ui/MuiInputBase.scss";
+@use "./ui/MuiButtonBase.scss";
 @use "./ui/MuiBottomNavigation.scss";
+@use "./ui/MuiRadioGroup.scss";
+
+@use "./questionnaires/details.scss";
+@use "./questionnaires/slider.scss";
+@use "./register/lang.scss";
+@use "./register/preview.scss";
+@use "./register/filling-quest.scss";
 
 @use "./global.scss";
-@use "./slider.scss";
-@use "./details.scss";

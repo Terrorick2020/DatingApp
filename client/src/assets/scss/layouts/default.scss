@@ -1,35 +1,13 @@
-#default-layout {
+.default-layout {
     width: 100%;
-    height: 100%;
-    padding: 0.7rem 0.5rem 0 0.5rem;
-    display: grid;
-    grid-template-rows: 1fr 15fr 2fr;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-    .head-nav {
+    .box {
         width: 100%;
-        padding-bottom: 0.8rem;
-
-        .head-nav__components  {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            justify-content: space-between;
-
-            .btn {
-                width: 6rem;
-
-                &:first-of-type {
-                    justify-self: start;
-                }
-                
-                &:last-of-type {
-                    justify-self: end;
-
-                    @media (max-width: 336px) {
-                        margin-right: clamp(0em, 1.1em - (100vw - 320px), 1.1em);
-                    }
-                }
-            }
-        }
+        height: 100vh;
+        max-width: 800px;
+        overflow: hidden;
     }
 }

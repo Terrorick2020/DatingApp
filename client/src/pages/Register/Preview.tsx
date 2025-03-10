@@ -4,7 +4,7 @@ import PreviewContent from '../../components/Register/Preview'
 const RegPreviewPage = () => {
     return (
         <>
-            <div className="preview">
+            <div className="preview" id="preview">
                 <PreviewContent />
             </div>
         </>

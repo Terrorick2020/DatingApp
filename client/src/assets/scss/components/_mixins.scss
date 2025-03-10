@@ -1,11 +1,6 @@
-@use 'sass:math';
+@use "sass:math";
+@use "sass:meta";
 
-
-@mixin font-inter($weight: 400, $style: normal) {
-    font-family: 'Inter', sans-serif;
-    font-weight: $weight;
-    font-style: $style;
-}
 
 @mixin fluid-text($max: 48, $min: 16) {
     $maxViewportWidth: 1400;
@@ -57,5 +52,39 @@
         path {
             fill: $color;
         }
+    }
+}
+
+@mixin fadeIn( $time: 1.2s, $func: ease-in-out, $delay: 0, $type: forwards ) {
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            visibility: visible;
+        }
+        to {
+            opacity: 1;
+            visibility: visible;
+        }
+    }
+
+    & {
+        animation: fadeIn $time $func $delay $type;
+    }
+}
+
+@mixin fadeOut( $time: 1.2s, $func: ease-in-out, $delay: 0, $type: forwards ) {
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            visibility: visible;
+        }
+        to {
+            opacity: 0;
+            visibility: visible;
+        }
+    }
+
+    & {
+        animation: fadeOut $time $func $delay $type;
     }
 }

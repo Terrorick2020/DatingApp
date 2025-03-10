@@ -1,12 +1,12 @@
-#questionnaires-layout {
+.outlet-quest {
     width: 100%;
+    overflow: auto;
 
-    .outlet {
-        width: 100%;
-        overflow: auto;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
+    &::-webkit-scrollbar {
+        display: none;
     }
+}
+
+.MuiBox-root.nav-bar {
+    width: 100%;
 }

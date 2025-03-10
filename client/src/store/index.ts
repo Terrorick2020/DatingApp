@@ -18,4 +18,5 @@ const store = configureStore({
     reducer: rootReducer,
 })
 
+export type TDispatch = typeof store.dispatch
 export default store

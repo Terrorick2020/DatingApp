@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom'
 const RegisterLayout = () => {
     return (
         <>
-            <div id="register-layout">
+            <div className="reg-layout">
                 <Outlet />
             </div>
         </>

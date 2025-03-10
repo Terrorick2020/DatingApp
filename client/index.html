@@ -3,18 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="shortcut icon" href="/logo.svg" type="image/x-icon">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>3Date</title>
     <link rel="stylesheet" href="/main.css">
   </head>
   <body>
     <noscript>Необходимо включить поддержку JS в вашей среде для работы приложения</noscript>
     <div id="preloader">
-      <div class="preloader__aside left"></div>
-      <div class="preloder__body">
-        <img class="logo" src="/logo.svg" alt="logo">
-        <img class="ThreeDate" src="/3Date.svg" alt="3Date">
+      <div class="preloader__ctx">
+        <img src="/preloader-logo.svg" alt="PreloaderLogo">
       </div>
-      <div class="preloader__aside right"></div>
+      <div class="preloader__text">
+        <span class="loader"></span>
+        <h6>Загрузка...</h6>
+      </div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

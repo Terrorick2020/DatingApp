@@ -4,7 +4,7 @@ import LangContent from '../../components/Register/Lang'
 const RegLangPage = () => {
     return (
         <>
-            <div className="preview">
+            <div className="lang" id="lang">
                 <LangContent />
             </div>
         </>
