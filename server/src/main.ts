@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core'
-import { BotModule } from './bot/bot.module'
+import { AppModule } from './app/app.module'
 
 async function bootstrap() {
-    const app = await NestFactory.create(BotModule)
+    const app = await NestFactory.create(AppModule)
 
     app.enableCors({
         origin: '*',

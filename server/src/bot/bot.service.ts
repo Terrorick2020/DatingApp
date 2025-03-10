@@ -16,7 +16,7 @@ export class BotService {
             {
               text: 'К знакомствам',
               web_app: {
-                url: 'https://192.168.56.1:5173/',
+                url: 'https://10.16.15.207:5173/register',
               },
             },
           ],
@@ -24,7 +24,7 @@ export class BotService {
       },
     };
 
-    await ctx.reply('Добро пожаловать! Здесь можно протестировать выполнение техниеского задания!', inlineKeyboard)
+    await ctx.reply('Welcome, go to the  our app', inlineKeyboard)
 
   }
 }
