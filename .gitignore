@@ -1,13 +1,23 @@
 .vscode/
+api/.vscode/
+bot/.vscode/
+client/.vscode/
+**/.vscode/
 
-server/node_modules/
+api/node_modules/
+bot/node_modules/
 client/node_modules/
+**/node_modules/
 
-server/dist/
+api/dist/
+bot/dist/
 client/dist/
+**/dist/
 
-server/.env
+bot/.env
+api/.env
 client/.env
+**/.env
 
 **/*.crt
 **/*.key

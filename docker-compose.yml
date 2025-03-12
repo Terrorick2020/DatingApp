@@ -5,18 +5,19 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=magic
+      - POSTGRES_DB=postgres
     networks:
       - planner_network
     ports:
       - "5432:5432"
 
-  server:
-    build: ./server
+  api:
+    build: ./api
+    restart: always
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/magic?schema=public
+      - DATABASE_URL=postgresql://postgres:password@db:5432/postgres?schema=public
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -26,11 +27,25 @@ services:
     ports:
       - "3000:3000"
 
+  bot:
+    build: ./bot
+    restart: always
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    networks:
+      - planner_network
+    ports:
+      - "9000:9000"
+
   client:
     build: ./client
+    restart: always
     depends_on:
       - db
       - server
+      - bot
     networks:
       - planner_network
     ports:
@@ -38,10 +53,12 @@ services:
 
   proxy:
     build: ./nginx
+    restart: always
     depends_on:
       - db
       - server
       - client
+      - bot
     networks:
       - planner_network
     ports:
