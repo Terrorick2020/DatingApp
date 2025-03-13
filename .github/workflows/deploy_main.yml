@@ -27,9 +27,9 @@ jobs:
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.PROD_SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /path/to/prod/project
             git pull
