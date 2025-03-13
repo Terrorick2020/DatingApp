@@ -1,12 +1,8 @@
 name: Deploy DatingApp to Dev
 
 on:
-  push:
-    branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
+  repository_dispatch:
+    types: [submodule_update]
 
 jobs:
   detect_changes:
