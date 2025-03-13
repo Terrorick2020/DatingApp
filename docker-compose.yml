@@ -3,30 +3,14 @@ services:
     image: postgres:latest
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - planner_network
     ports:
       - "5432:5432"
-
-  api:
-    build: ./api
-    restart: always
-    depends_on:
-      - db
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/postgres?schema=public
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-      - 1.1.1.1
-    networks:
-      - planner_network
-    ports:
-      - "3000:3000"
-
+  
   bot:
     build: ./bot
     restart: always
@@ -39,13 +23,26 @@ services:
     ports:
       - "9000:9000"
 
+  api:
+    build: ./api
+    restart: always
+    depends_on:
+      - db
+      - bot
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - planner_network
+    ports:
+      - "3000:3000"
+
   client:
     build: ./client
     restart: always
     depends_on:
       - db
-      - server
       - bot
+      - api
     networks:
       - planner_network
     ports:
@@ -56,9 +53,9 @@ services:
     restart: always
     depends_on:
       - db
-      - server
-      - client
       - bot
+      - api
+      - client
     networks:
       - planner_network
     ports:

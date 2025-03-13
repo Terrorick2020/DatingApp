@@ -1,0 +1,40 @@
+name: Deploy DatingApp to Production
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy_full:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          path: ~/www/cyberslavs.fun/
+
+      - name: Build & Push All Docker Images (With Cache Clear)
+        run: |
+          docker-compose build --no-cache
+          docker-compose push
+
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/prod/project
+            git pull
+            git submodule update --init --recursive
+            docker system prune --force --all --volumes
+            docker-compose down --rmi=local
+            docker-compose pull
+            docker-compose up -d --build

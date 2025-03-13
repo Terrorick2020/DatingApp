@@ -1,0 +1,40 @@
+name: Manual Full Deploy DatingApp
+
+on:
+  workflow_dispatch
+
+jobs:
+  deploy_manual:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          path: ~/www/cyberslavs.fun/
+      
+      - name: "Stop docker containers"
+        run: |
+          docker-compose down --rmi=local
+
+      - name: Build & Push All Docker Images (Full Rebuild)
+        run: |
+          docker system prune --force --all --volumes
+          docker-compose build --no-cache
+          docker-compose push
+
+      - name: Deploy to Production Server (Full Reset)
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/www/cyberslavs.fun/
+            git pull
+            git submodule update --init --recursive
+            docker system prune --force --all --volumes
+            docker-compose down -v --rmi=local
+            docker-compose pull
+            docker-compose up -d --build

@@ -1,0 +1,60 @@
+name: Deploy DatingApp to Dev
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed_submodule: ${{ steps.check-modules.outputs.changed_submodule }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Check Changed Submodule
+        id: check-modules
+        run: |
+          git fetch --depth=2 origin dev
+          CHANGED_MODULE=$(git diff --name-only HEAD^ HEAD | grep -E "^(bot|api|client)/" | cut -d '/' -f1 | uniq)
+          if [ -n "$CHANGED_MODULE" ]; then
+            echo "changed_submodule=$CHANGED_MODULE" >> "$GITHUB_ENV"
+            echo "changed_submodule=$CHANGED_MODULE" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy_partial:
+    needs: detect_changes
+    runs-on: ubuntu-latest
+    if: needs.detect_changes.outputs.changed_submodule != ''
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          path: ~/www/cyberslavs.fun/
+
+      - name: Build & Push Docker Image
+        run: |
+          cd ${{ needs.detect_changes.outputs.changed_submodule }}
+          docker build -t myrepo/${{ needs.detect_changes.outputs.changed_submodule }}:dev .
+          docker push myrepo/${{ needs.detect_changes.outputs.changed_submodule }}:dev
+
+      - name: Deploy to Dev Server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/www/cyberslavs.fun/
+            git pull
+            docker-compose up -d --no-deps --build ${{ needs.detect_changes.outputs.changed_submodule }}

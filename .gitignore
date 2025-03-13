@@ -14,9 +14,16 @@ bot/dist/
 client/dist/
 **/dist/
 
+api/ssl/
+bot/ssl/
+client/ssl/
+nginx/ssl/
+**/ssl/
+
 bot/.env
 api/.env
 client/.env
+.env
 **/.env
 
 **/*.crt
