@@ -8,7 +8,7 @@ on:
     branches:
       - dev
   repository_dispatch:
-    types: [submodule_update]
+    types: [submodule-update]
 
 jobs:
   detect_changes:
