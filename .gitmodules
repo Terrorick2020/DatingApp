@@ -1,9 +1,12 @@
 [submodule "bot"]
 	path = bot
 	url = https://github.com/Terrorick2020/DatingAppBot.git
+	branch = main
 [submodule "api"]
 	path = api
 	url = https://github.com/Terrorick2020/DatingAppApi.git
+	branch = main
 [submodule "client"]
 	path = client
 	url = https://github.com/Terrorick2020/DatingAppClient.git
+	branch = main
