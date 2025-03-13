@@ -1,4 +1,4 @@
-name: Deploy DatingApp to Dev
+name: Deploy Submodules
 
 on:
   repository_dispatch:
