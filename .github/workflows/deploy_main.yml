@@ -26,7 +26,11 @@ jobs:
 
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
-          ls ~
+          ls ~/factory
+          ls ~/perflog
+          ls ~/runners
+          ls ~/warmup
+          ls ~/work
           cd ~/www/cyberslavs.fun
           docker compose build --no-cache
           docker compose push
