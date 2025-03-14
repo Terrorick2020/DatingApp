@@ -31,6 +31,7 @@ jobs:
           ls ~/runners
           ls ~/warmup
           ls ~/work
+          ls -lah $GITHUB_WORKSPACE
           cd ~/www/cyberslavs.fun
           docker compose build --no-cache
           docker compose push
