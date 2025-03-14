@@ -27,9 +27,9 @@ jobs:
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
           ls
-          cd ~/www/cyberslavs.fun/
-          # docker compose build --no-cache
-          # docker compose push
+          cd /root/www/cyberslavs.fun
+          docker compose build --no-cache
+          docker compose push
 
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@v0.1.10
