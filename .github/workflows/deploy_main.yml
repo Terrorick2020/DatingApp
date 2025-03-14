@@ -21,8 +21,8 @@ jobs:
 
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
-          docker-compose build --no-cache
-          docker-compose push
+          docker compose build --no-cache
+          docker compose push
 
       - name: Deploy to Production Server
         uses: appleboy/ssh-action@v0.1.10
@@ -35,6 +35,6 @@ jobs:
             git pull
             git submodule update --init --recursive
             docker system prune --force --all --volumes
-            docker-compose down --rmi=local
-            docker-compose pull
-            docker-compose up -d --build
+            docker compose down --rmi=local
+            docker compose pull
+            docker compose up -d --build
