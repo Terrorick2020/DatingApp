@@ -19,6 +19,11 @@ jobs:
           submodules: true
           path: ~/www/cyberslavs.fun/
 
+      - name: Check Docker and Docker Compose Versions
+        run: |
+          docker --version
+          docker compose version || docker-compose version
+
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
           docker compose build --no-cache
