@@ -26,6 +26,7 @@ jobs:
 
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
+          ls
           cd ~/www/cyberslavs.fun/
           docker compose build --no-cache
           docker compose push
