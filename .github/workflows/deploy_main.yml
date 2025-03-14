@@ -22,10 +22,11 @@ jobs:
       - name: Check Docker and Docker Compose Versions
         run: |
           docker --version
-          docker compose version || docker-compose version
+          docker compose version || docker compose version
 
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
+          cd ~/www/cyberslavs.fun/
           docker compose build --no-cache
           docker compose push
 
@@ -36,7 +37,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /path/to/prod/project
+            cd ~/www/cyberslavs.fun/
             git pull
             git submodule update --init --recursive
             docker system prune --force --all --volumes
