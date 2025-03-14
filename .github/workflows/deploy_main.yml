@@ -27,6 +27,7 @@ jobs:
       - name: Build & Push All Docker Images (With Cache Clear)
         run: |
           cd $GITHUB_WORKSPACE
+          cd ~
           ls
           docker compose build --no-cache
           docker compose push
