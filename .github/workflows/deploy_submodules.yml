@@ -21,18 +21,22 @@ jobs:
       - name: Detect submodule changes
         id: check-modules
         run: |
-          git submodule status --recursive > before.lst
-          git submodule update --remote --recursive
-          git submodule status --recursive > after.lst
-          
-          # Формируем JSON-массив измененных модулей
-          CHANGED_SUBMODULES=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
-            awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
-            sort -u |
-            jq -R -n '[inputs | select(length>0)]')
-
-          echo "changed_submodules=$CHANGED_SUBMODULES" >> $GITHUB_OUTPUT
-          echo "Detected changes: $CHANGED_SUBMODULES"
+            # Установка jq если требуется
+            sudo apt-get update && sudo apt-get install -y jq
+        
+            git submodule status --recursive > before.lst
+            git submodule update --remote --recursive
+            git submodule status --recursive > after.lst
+            
+            # Генерация JSON массива без пробелов
+            CHANGED_JSON=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
+              awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
+              sort -u |
+              jq -R -n '[inputs | select(length>0)]' | jq -c .)
+            
+            # Правильный вывод переменной
+            echo "changed_submodules=$CHANGED_JSON" >> $GITHUB_OUTPUT
+            echo "Detected changes: $CHANGED_JSON"
 
   deploy_partial:
     needs: detect_changes
