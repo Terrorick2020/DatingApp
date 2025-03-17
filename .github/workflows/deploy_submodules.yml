@@ -62,10 +62,14 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
-          file: ./${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:partial
+          tags: |
+            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:partial-${{ github.sha }}
+            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
+            cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+            cache-to: type=inline,mode=max
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
