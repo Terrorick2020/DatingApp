@@ -32,7 +32,7 @@ jobs:
         run: |
           git checkout main
           git pull
-          git submodule update --init --recursive
+          git submodule update --init --recursive --remote
 
       - name: Build Docker Containers and Run Project
         run: |
