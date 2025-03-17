@@ -18,25 +18,22 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Detect submodule changes
         id: check-modules
         run: |
-            # Установка jq если требуется
-            sudo apt-get update && sudo apt-get install -y jq
-        
-            git submodule status --recursive > before.lst
-            git submodule update --remote --recursive
-            git submodule status --recursive > after.lst
-            
-            # Генерация JSON массива без пробелов
-            CHANGED_JSON=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
-              awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
-              sort -u |
-              jq -R -n '[inputs | select(length>0)]' | jq -c .)
-            
-            # Правильный вывод переменной
-            echo "changed_submodules=$CHANGED_JSON" >> $GITHUB_OUTPUT
-            echo "Detected changes: $CHANGED_JSON"
+          git submodule status --recursive > before.lst
+          git submodule update --remote --recursive
+          git submodule status --recursive > after.lst
+          
+          CHANGED_JSON=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
+            awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
+            sort -u |
+            jq -R -n '[inputs | select(length>0)]' | jq -c .)
+          
+          echo "changed_submodules=$CHANGED_JSON" >> $GITHUB_OUTPUT
 
   deploy_partial:
     needs: detect_changes
@@ -68,8 +65,11 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:partial-${{ github.sha }}
             ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
-          cache-to: type=inline,mode=max
+          cache-from: |
+            type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+            type=gha,scope=${{ github.ref }}-${{ matrix.service }}
+          cache-to: |
+            type=gha,scope=${{ github.ref }}-${{ matrix.service }},mode=max
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
@@ -80,11 +80,6 @@ jobs:
           script: |
             export DOCKER_USER=${{ secrets.DOCKER_USER }}
             cd ~/www/cyberslavs.fun
-            
-            for service in ${{ join(matrix.service, ' ') }}; do
-              echo "Updating $service"
-              docker compose pull $service
-              docker compose up -d --no-deps $service
-            done
-            
+            docker compose pull ${{ join(matrix.service, ' ') }}
+            docker compose up -d --force-recreate ${{ join(matrix.service, ' ') }}
             docker system prune -f
