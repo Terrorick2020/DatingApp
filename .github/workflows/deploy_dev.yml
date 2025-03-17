@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - dev
-  pull_request:
-    branches:
-      - dev
 
 jobs:
   detect_changes:
@@ -41,7 +38,7 @@ jobs:
         with:
           submodules: true
 
-      - name: Build & Push Docker Image
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -50,11 +47,11 @@ jobs:
           script: |
             cd ~/www/cyberslavs.fun/
             git checkout dev
-            git update submodule --init --recursive --remoute
-            docker build -t ${{ needs.detect_changes.outputs.changed_submodule }}:dev 
+            git pull origin dev
+            git submodule update --init --recursive --remote
 
-      - name: Deploy to Dev Server
-        run: |
-          cd ~/www/cyberslavs.fun/
-          git pull
-          docker-compose up -d --no-deps --build ${{ needs.detect_changes.outputs.changed_submodule }}
+            CHANGED_MODULE=${{ needs.detect_changes.outputs.changed_submodule }}
+            echo "Rebuilding $CHANGED_MODULE"
+
+            docker-compose build $CHANGED_MODULE
+            docker-compose up -d --build $CHANGED_MODULE
