@@ -1,7 +1,9 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:latest
-    restart: always
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -12,8 +14,8 @@ services:
       - "5432:5432"
   
   bot:
-    build: ./bot
-    restart: always
+    image: ${DOCKER_USER}/bot:latest
+    restart: unless-stopped
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -24,8 +26,8 @@ services:
       - "9000:9000"
 
   api:
-    build: ./api
-    restart: always
+    image: ${DOCKER_USER}/api:latest
+    restart: unless-stopped
     depends_on:
       - db
       - bot
@@ -37,8 +39,8 @@ services:
       - "3000:3000"
 
   client:
-    build: ./client
-    restart: always
+    image: ${DOCKER_USER}/client:latest
+    restart: unless-stopped
     depends_on:
       - db
       - bot
@@ -50,7 +52,7 @@ services:
 
   proxy:
     build: ./nginx
-    restart: always
+    restart: unless-stopped
     depends_on:
       - db
       - bot
