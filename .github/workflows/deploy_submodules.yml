@@ -37,14 +37,13 @@ jobs:
 
           echo "changed_submodule=${CHANGED_SUBMODULES%% }" >> $GITHUB_OUTPUT
 
-      - name: Debug output
-        run: |
-          echo "Detected: ${{ steps.check-modules.outputs.changed_submodule }}"
-
   deploy_partial:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.changed_submodule != '' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect_changes.outputs.changed_submodule) }}
 
     steps:
       - name: Checkout code
@@ -68,8 +67,8 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:partial-${{ github.sha }}
             ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
-            cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
-            cache-to: type=inline,mode=max
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+          cache-to: type=inline,mode=max
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
@@ -78,14 +77,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            export DOCKER_USER=${{ secrets.DOCKER_USER }}
             cd ~/www/cyberslavs.fun
-            git pull origin main
-            git submodule update --init --recursive --force
             
-            for module in ${{ needs.detect_changes.outputs.changed_submodule }}; do
-              echo "Updating $module"
-              docker compose pull $module
-              docker compose up -d --no-deps $module
+            # Обновляем только измененные сервисы
+            for service in ${{ join(matrix.service, ' ') }}; do
+              docker compose pull $service
+              docker compose up -d --no-deps $service
             done
             
             docker system prune -f
