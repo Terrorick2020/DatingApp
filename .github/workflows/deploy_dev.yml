@@ -50,9 +50,8 @@ jobs:
           script: |
             cd ~/www/cyberslavs.fun/
             git checkout dev
-            cd ${{ needs.detect_changes.outputs.changed_submodule }}
-            git pull
-            docker build -t myrepo/${{ needs.detect_changes.outputs.changed_submodule }}:dev .
+            git update submodule --init --recursive --remoute
+            docker build -t ${{ needs.detect_changes.outputs.changed_submodule }}:dev 
 
       - name: Deploy to Dev Server
         run: |
