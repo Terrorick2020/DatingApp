@@ -16,30 +16,33 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: SSH Deployment Commands
-        uses: appleboy/ssh-action@v1.0.7
+      - name: Execute Deployment on VPS
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/www/cyberslavs.fun/
-            docker compose down --rmi local --remove-orphans
+            
+            # Force cleanup
             git reset --hard HEAD
-
             git clean -fd
+            
+            # Update repo and submodules
             git checkout main
-            git pull origin main --ff-only
-
-            git submodule sync
+            git pull origin main
             git submodule update --init --recursive --remote --force
-
-            docker compose up -d --build --force-recreate --remove-orphans
             
-
+            # Docker operations
+            docker compose down --rmi local --volumes --remove-orphans
+            docker compose up -d --build --force-recreate
+            
+            # Cleanup old images
             docker image prune -af
-            docker volume prune -f
             
-
-            echo "Current containers:"
-            docker compose ps -a
+            # Verification
+            echo "=== Current Docker Containers ==="
+            docker compose ps
+            echo "=== Latest Docker Images ==="
+            docker images --filter "reference=datingapp*" --format "table {{.ID}}\t{{.Repository}}\t{{.Tag}}"

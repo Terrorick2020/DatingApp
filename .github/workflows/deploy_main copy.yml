@@ -1,0 +1,40 @@
+name: Deploy DatingApp to Production
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy_full:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Cleaning Cache and Down Containers
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/www/cyberslavs.fun/
+            docker compose down --rmi=local
+
+      - name: Update Repository and Going to Main Branch
+        run: |
+          git checkout main
+          git pull
+          git submodule update --init --recursive --remote
+
+      - name: Build Docker Containers and Run Project
+        run: |
+          docker compose up -d --force-recreate --remove-orphans
+          docker system prune --force --all --volumes
