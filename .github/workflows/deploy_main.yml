@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   deploy_full:
@@ -17,24 +14,32 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 0
 
-      - name: Cleaning Cache and Down Containers
-        uses: appleboy/ssh-action@v0.1.10
+      - name: SSH Deployment Commands
+        uses: appleboy/ssh-action@v1.0.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/www/cyberslavs.fun/
-            docker compose down --rmi=local
+            docker compose down --rmi local --remove-orphans
+            git reset --hard HEAD
 
-      - name: Update Repository and Going to Main Branch
-        run: |
-          git checkout main
-          git pull
-          git submodule update --init --recursive --remote
+            git clean -fd
+            git checkout main
+            git pull origin main --ff-only
 
-      - name: Build Docker Containers and Run Project
-        run: |
-          docker compose up -d --force-recreate --remove-orphans
-          docker system prune --force --all --volumes
+            git submodule sync
+            git submodule update --init --recursive --remote --force
+
+            docker compose up -d --build --force-recreate --remove-orphans
+            
+
+            docker image prune -af
+            docker volume prune -f
+            
+
+            echo "Current containers:"
+            docker compose ps -a
