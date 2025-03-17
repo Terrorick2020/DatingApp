@@ -7,6 +7,9 @@ on:
 jobs:
   deploy_full:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ['client', 'api', 'bot']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,20 +22,15 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Services
+      - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./docker-compose.yml
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USER }}/client:latest
-            ${{ secrets.DOCKER_USER }}/api:latest
-            ${{ secrets.DOCKER_USER }}/bot:latest
-          cache-from: |
-            type=registry,ref=${{ secrets.DOCKER_USER }}/client-deps:latest
-            type=registry,ref=${{ secrets.DOCKER_USER }}/api-deps:latest
-            type=registry,ref=${{ secrets.DOCKER_USER }}/bot-deps:latest
+            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
           cache-to: type=inline,mode=max
 
       - name: Deploy to VPS
@@ -45,5 +43,5 @@ jobs:
             cd ~/www/cyberslavs.fun
             docker compose down
             docker compose pull
-            docker compose up -d --build
+            docker compose up -d
             docker image prune -af
