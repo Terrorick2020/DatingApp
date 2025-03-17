@@ -14,12 +14,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
       - name: Check Changed Submodule
         id: check-modules
         run: |
-          git fetch --depth=2 origin dev
+          git submodule update --init --recursive --remote
           CHANGED_MODULE=$(git diff --name-only HEAD^ HEAD | grep -E "^(bot|api|client)/" | cut -d '/' -f1 | uniq)
           if [ -n "$CHANGED_MODULE" ]; then
             echo "changed_submodule=$CHANGED_MODULE" >> "$GITHUB_ENV"
@@ -35,9 +35,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
 
-      - name: Build & Push Docker Image
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -46,12 +46,11 @@ jobs:
           script: |
             cd ~/www/cyberslavs.fun/
             git checkout dev
-            cd ${{ needs.detect_changes.outputs.changed_submodule }}
-            git pull
-            docker build -t myrepo/${{ needs.detect_changes.outputs.changed_submodule }}:dev .
+            git pull origin dev
+            git submodule update --init --recursive --remote
+            
+            CHANGED_MODULE=${{ needs.detect_changes.outputs.changed_submodule }}
+            echo "Rebuilding $CHANGED_MODULE"
 
-      - name: Deploy to Dev Server
-        run: |
-          cd ~/www/cyberslavs.fun/
-          git pull
-          docker-compose up -d --no-deps --build ${{ needs.detect_changes.outputs.changed_submodule }}
+            docker-compose build $CHANGED_MODULE
+            docker-compose up -d --build $CHANGED_MODULE
