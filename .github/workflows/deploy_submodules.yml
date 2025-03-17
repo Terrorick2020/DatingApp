@@ -9,33 +9,54 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed_submodule: ${{ steps.check-modules.outputs.changed_submodule }}
+      branch_ref: ${{ github.event.client_payload.ref }}
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout with full history
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0  # Полная история коммитов
 
-      - name: Check Changed Submodule
+      - name: Detect submodule changes
         id: check-modules
         run: |
-          git submodule update --init --recursive --remote
-          CHANGED_MODULE=$(git diff --name-only HEAD^ HEAD | grep -E "^(bot|api|client)/" | cut -d '/' -f1 | uniq)
-          if [ -n "$CHANGED_MODULE" ]; then
-            echo "changed_submodule=$CHANGED_MODULE" >> "$GITHUB_ENV"
-            echo "changed_submodule=$CHANGED_MODULE" >> "$GITHUB_OUTPUT"
+          git submodule status --recursive > before.lst
+          
+          git submodule update --remote --recursive
+          
+          git submodule status --recursive > after.lst
+          
+          CHANGED_SUBMODULES=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
+            awk '{print $2}' |
+            xargs -I{} dirname {} |
+            xargs -I{} basename {} |
+            sort -u)
+
+          if [ -z "$CHANGED_SUBMODULES" ]; then
+            echo "No submodules changed"
+            exit 0
           fi
+
+          echo "Detected changes in: $CHANGED_SUBMODULES"
+          echo "changed_submodule=$CHANGED_SUBMODULES" >> $GITHUB_OUTPUT
+
+      - name: Debug output
+        run: |
+          echo "Changed submodules: ${{ steps.check-modules.outputs.changed_submodule }}"
+          echo "Branch: ${{ github.event.client_payload.ref }}"
 
   deploy_partial:
     needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.changed_submodule != '' }}
     runs-on: ubuntu-latest
-    if: needs.detect_changes.outputs.changed_submodule != ''
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: ${{ needs.detect_changes.outputs.branch_ref }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
@@ -44,13 +65,29 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/www/cyberslavs.fun/
-            git checkout dev
-            git pull origin dev
-            git submodule update --init --recursive --remote
+            set -x  # Режим отладки
             
-            CHANGED_MODULE=${{ needs.detect_changes.outputs.changed_submodule }}
-            echo "Rebuilding $CHANGED_MODULE"
-
-            docker-compose build $CHANGED_MODULE
-            docker-compose up -d --build $CHANGED_MODULE
+            cd ~/www/cyberslavs.fun/
+            
+            # Обновление основной ветки
+            git checkout ${GITHUB_REF##*/}
+            git reset --hard
+            git pull --ff-only
+            
+            # Принудительное обновление подмодулей
+            git submodule update --init --recursive --remote --force
+            
+            # Пересборка измененных контейнеров
+            for module in ${{ needs.detect_changes.outputs.changed_submodule }}; do
+              echo "Rebuilding $module"
+              docker compose stop $module || true
+              docker compose rm -f $module || true
+              docker compose build --no-cache $module
+              docker compose up -d $module
+              sleep 5  # Даем время на инициализацию
+            done
+            
+            echo "Final containers status:"
+            docker compose ps
+            echo "Disk usage:"
+            df -h
