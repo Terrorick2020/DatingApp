@@ -8,7 +8,7 @@ jobs:
   detect_changes:
     runs-on: ubuntu-latest
     outputs:
-      changed_submodule: ${{ steps.check-modules.outputs.changed_submodule }}
+      changed_submodules: ${{ steps.check-modules.outputs.changed_submodules }}
       branch_ref: ${{ github.event.client_payload.ref }}
 
     steps:
@@ -25,25 +25,22 @@ jobs:
           git submodule update --remote --recursive
           git submodule status --recursive > after.lst
           
+          # Формируем JSON-массив измененных модулей
           CHANGED_SUBMODULES=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
             awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
             sort -u |
-            tr '\n' ' ')
+            jq -R -n '[inputs | select(length>0)]')
 
-          if [ -z "$CHANGED_SUBMODULES" ]; then
-            echo "No submodules changed"
-            exit 0
-          fi
-
-          echo "changed_submodule=${CHANGED_SUBMODULES%% }" >> $GITHUB_OUTPUT
+          echo "changed_submodules=$CHANGED_SUBMODULES" >> $GITHUB_OUTPUT
+          echo "Detected changes: $CHANGED_SUBMODULES"
 
   deploy_partial:
     needs: detect_changes
-    if: ${{ needs.detect_changes.outputs.changed_submodule != '' }}
+    if: ${{ needs.detect_changes.outputs.changed_submodules != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJson(needs.detect_changes.outputs.changed_submodule) }}
+        service: ${{ fromJson(needs.detect_changes.outputs.changed_submodules) }}
 
     steps:
       - name: Checkout code
@@ -80,8 +77,8 @@ jobs:
             export DOCKER_USER=${{ secrets.DOCKER_USER }}
             cd ~/www/cyberslavs.fun
             
-            # Обновляем только измененные сервисы
             for service in ${{ join(matrix.service, ' ') }}; do
+              echo "Updating $service"
               docker compose pull $service
               docker compose up -d --no-deps $service
             done
