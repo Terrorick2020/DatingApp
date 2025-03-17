@@ -7,9 +7,6 @@ on:
 jobs:
   deploy_full:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: ['client', 'api', 'bot']
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,12 +22,17 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.service }}
-          file: ${{ matrix.service }}/Dockerfile
+          context: .
+          file: ./docker-compose.yml
           push: true
           tags: |
-            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+            ${{ secrets.DOCKER_USER }}/client:latest
+            ${{ secrets.DOCKER_USER }}/api:latest
+            ${{ secrets.DOCKER_USER }}/bot:latest
+          cache-from: |
+            type=registry,ref=${{ secrets.DOCKER_USER }}/client-deps:latest
+            type=registry,ref=${{ secrets.DOCKER_USER }}/api-deps:latest
+            type=registry,ref=${{ secrets.DOCKER_USER }}/bot-deps:latest
           cache-to: type=inline,mode=max
 
       - name: Deploy to VPS
@@ -40,8 +42,17 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            export DOCKER_USER=${{ secrets.DOCKER_USER }}
             cd ~/www/cyberslavs.fun
-            docker compose down
+            
+            # Принудительное удаление всех ресурсов
+            docker compose down -v --rmi local --remove-orphans
+            
+            # Загрузка новых образов
             docker compose pull
-            docker compose up -d
-            docker image prune -af
+            
+            # Пересборка и запуск
+            docker compose up -d --build --force-recreate
+            
+            # Очистка
+            docker system prune -f
