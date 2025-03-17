@@ -12,6 +12,7 @@ services:
       - "5432:5432"
   
   bot:
+    image: ${DOCKER_USER}/bot:latest
     build: ./bot
     restart: always
     dns:
@@ -24,6 +25,7 @@ services:
       - "9000:9000"
 
   api:
+    image: ${DOCKER_USER}/api:latest
     build: ./api
     restart: always
     depends_on:
@@ -37,6 +39,7 @@ services:
       - "3000:3000"
 
   client:
+    image: ${DOCKER_USER}/client:latest
     build: ./client
     restart: always
     depends_on:

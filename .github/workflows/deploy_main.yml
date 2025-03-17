@@ -3,10 +3,6 @@ name: Deploy Production
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'client/**'
-      - 'api/**'
-      - 'bot/**'
 
 jobs:
   deploy_full:
@@ -23,15 +19,17 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push
+      - name: Build and Push Services
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./docker-compose.yml
           push: true
-          tags: ${{ secrets.DOCKER_USER }}/app:latest
+          tags: |
+            ${{ secrets.DOCKER_USER }}/client:latest
+            ${{ secrets.DOCKER_USER }}/api:latest
+            ${{ secrets.DOCKER_USER }}/bot:latest
           cache-from: |
-            type=registry,ref=${{ secrets.DOCKER_USER }}/app:buildcache
             type=registry,ref=${{ secrets.DOCKER_USER }}/client-deps:latest
             type=registry,ref=${{ secrets.DOCKER_USER }}/api-deps:latest
             type=registry,ref=${{ secrets.DOCKER_USER }}/bot-deps:latest
@@ -49,5 +47,3 @@ jobs:
             docker compose pull
             docker compose up -d --build
             docker image prune -af
-            echo "=== Current Containers ==="
-            docker compose ps -a
