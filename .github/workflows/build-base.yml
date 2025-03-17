@@ -1,0 +1,38 @@
+name: Build Base Images
+
+on:
+  push:
+    paths:
+      - 'client/package.json'
+      - 'api/package.json'
+      - 'bot/package.json'
+    branches: [main]
+
+jobs:
+  build-base-images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: ['client', 'api', 'bot']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service }}
+          file: ${{ matrix.service }}/Dockerfile
+          target: deps
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+          cache-to: type=inline,mode=max
