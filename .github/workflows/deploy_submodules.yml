@@ -24,16 +24,9 @@ jobs:
       - name: Detect submodule changes
         id: check-modules
         run: |
-          git submodule status --recursive > before.lst
-          git submodule update --remote --recursive
-          git submodule status --recursive > after.lst
-          
-          CHANGED_JSON=$(diff --unchanged-line-format= --old-line-format= --new-line-format=%L before.lst after.lst |
-            awk '{gsub(/[+-]/, ""); split($2, a, "/"); print a[1]}' |
-            sort -u |
-            jq -R -n '[inputs | select(length>0)]' | jq -c .)
-          
-          echo "changed_submodules=$CHANGED_JSON" >> $GITHUB_OUTPUT
+          git submodule update --init --recursive
+          git submodule status --recursive | awk '{print $2}' | jq -R -s -c 'split("\n")[:-1]' > changed.json
+          echo "changed_submodules=$(cat changed.json)" >> $GITHUB_OUTPUT
 
   deploy_partial:
     needs: detect_changes
@@ -56,15 +49,6 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        id: buildx
-        with:
-          driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:master
-          install: true
-
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -72,12 +56,10 @@ jobs:
           file: ${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:partial-${{ github.sha }}
             ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:latest
-          cache-from: |
-            type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
+            ${{ secrets.DOCKER_USER }}/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
           cache-to: type=inline,mode=max
-          builder: ${{ steps.buildx.outputs.name }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v0.1.10
@@ -88,6 +70,6 @@ jobs:
           script: |
             export DOCKER_USER=${{ secrets.DOCKER_USER }}
             cd ~/www/cyberslavs.fun
-            docker compose pull ${{ join(matrix.service, ' ') }}
-            docker compose up -d --force-recreate ${{ join(matrix.service, ' ') }}
+            docker compose pull ${{ matrix.service }}
+            docker compose up -d --force-recreate ${{ matrix.service }}
             docker system prune -f

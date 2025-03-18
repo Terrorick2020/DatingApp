@@ -10,6 +10,7 @@ jobs:
     strategy:
       matrix:
         service: ['client', 'api', 'bot']
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +42,6 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd ~/www/cyberslavs.fun
-            docker compose down -v --rmi local --remove-orphans
             docker compose pull
             docker compose up -d --build --force-recreate
             docker image prune -f

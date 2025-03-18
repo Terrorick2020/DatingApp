@@ -16,11 +16,12 @@ jobs:
     strategy:
       matrix:
         service: ['client', 'api', 'bot']
+
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      
+
       - name: Docker Login
         uses: docker/login-action@v3
         with:
@@ -35,5 +36,5 @@ jobs:
           target: deps
           push: true
           tags: ${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
-          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USER }}/${{ matrix.service }}-deps:latest
           cache-to: type=inline,mode=max
