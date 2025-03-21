@@ -9,19 +9,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed_services: ${{ steps.check-changes.outputs.changed_services }}
+      root_changed: ${{ steps.check-changes.outputs.root_changed }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Get changed services
+      - name: Get changed files
         id: check-changes
         run: |
+          # Определяем измененные сервисы
           CHANGED_SERVICES=$(git diff --name-only HEAD^ HEAD | grep -oE '^(client|api|bot)/' | sort -u | sed 's/\///' | jq -R -s -c 'split("\n")[:-1]')
+          
+          # Проверяем изменения в корне
+          ROOT_CHANGED=$(git diff --name-only HEAD^ HEAD | grep -vE '^(client|api|bot)/' | wc -l)
+          
           echo "changed_services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+          echo "root_changed=$ROOT_CHANGED" >> $GITHUB_OUTPUT
 
-  deploy_full:
+  deploy_services:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.changed_services != '[]' }}
     runs-on: ubuntu-latest
@@ -60,5 +67,33 @@ jobs:
           script: |
             cd ~/www/cyberslavs.fun
             docker compose pull ${{ matrix.service }}
-            docker compose up -d --build --force-recreate ${{ matrix.service }}
-            docker image prune -f
+            docker compose up -d --force-recreate ${{ matrix.service }}
+            docker system prune -f
+
+  deploy_root:
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.root_changed > 0 }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/www/cyberslavs.fun
+            docker compose pull
+            docker compose up -d --force-recreate
+            docker system prune -f
