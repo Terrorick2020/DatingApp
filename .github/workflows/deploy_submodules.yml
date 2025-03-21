@@ -16,17 +16,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
+          fetch-depth: 2  # Для сравнения с предыдущим коммитом
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Detect submodule changes
+      - name: Get changed submodules
         id: check-modules
         run: |
-          git submodule update --init --recursive
-          git submodule status --recursive | awk '{print $2}' | jq -R -s -c 'split("\n")[:-1]' > changed.json
-          echo "changed_submodules=$(cat changed.json)" >> $GITHUB_OUTPUT
+          # Получаем список измененных подмодулей
+          CHANGED_SUBMODULES=$(git diff --name-only HEAD^ HEAD | grep -o 'submodules/.*/' | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "changed_submodules=$CHANGED_SUBMODULES" >> $GITHUB_OUTPUT
 
   deploy_partial:
     needs: detect_changes
