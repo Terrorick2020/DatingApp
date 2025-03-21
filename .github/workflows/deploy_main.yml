@@ -12,20 +12,22 @@ jobs:
       root_changed: ${{ steps.check-changes.outputs.root_changed }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          submodules: recursive
+          fetch-depth: 2  # Для сравнения с предыдущим коммитом
 
       - name: Get changed files
         id: check-changes
         run: |
-          # Определяем измененные сервисы
-          CHANGED_SERVICES=$(git diff --name-only HEAD^ HEAD | grep -oE '^(client|api|bot)/' | sort -u | sed 's/\///' | jq -R -s -c 'split("\n")[:-1]')
+          # Получаем список измененных файлов в подмодулях
+          CHANGED_SUBMODULES=$(git diff --name-only HEAD^ HEAD | grep -oE '^(client|api|bot)/' | sort -u | sed 's/\///' | jq -R -s -c 'split("\n")[:-1]')
           
-          # Проверяем изменения в корне
+          # Получаем изменения в корне
           ROOT_CHANGED=$(git diff --name-only HEAD^ HEAD | grep -vE '^(client|api|bot)/' | wc -l)
           
-          echo "changed_services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+          echo "changed_services=$CHANGED_SUBMODULES" >> $GITHUB_OUTPUT
           echo "root_changed=$ROOT_CHANGED" >> $GITHUB_OUTPUT
 
   deploy_services:
@@ -37,7 +39,8 @@ jobs:
         service: ${{ fromJson(needs.detect_changes.outputs.changed_services) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -76,7 +79,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -97,3 +101,10 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate
             docker system prune -f
+
+      - name: Debug changed files
+        run: |
+              echo "Changed files:"
+              git diff --name-only HEAD^ HEAD
+              echo "Changed submodules:"
+              git submodule status --recursive
