@@ -101,10 +101,3 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate
             docker system prune -f
-
-      - name: Debug changed files
-        run: |
-              echo "Changed files:"
-              git diff --name-only HEAD^ HEAD
-              echo "Changed submodules:"
-              git submodule status --recursive
