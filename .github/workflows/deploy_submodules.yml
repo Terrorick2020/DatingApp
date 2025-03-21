@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJson(github.event.client_payload.services) }}
+        service: ${{ fromJson(github.event.client_payload.services || '[]') }}
     
     steps:
       - name: Checkout code
