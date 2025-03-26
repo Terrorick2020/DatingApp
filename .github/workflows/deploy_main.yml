@@ -59,7 +59,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/www/cyberslavs.fun
+            cd ~/www/3dating.fun
             docker compose down
             docker compose pull
             docker compose up -d --build

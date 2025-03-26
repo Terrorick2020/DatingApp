@@ -51,7 +51,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             export DOCKER_USER=${{ secrets.DOCKER_USER }}
-            cd ~/www/cyberslavs.fun
+            cd ~/www/3dating.fun
             docker compose pull ${{ matrix.service }}
             docker compose up -d --force-recreate ${{ matrix.service }}
             docker system prune -f
