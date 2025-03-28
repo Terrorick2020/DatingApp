@@ -22,6 +22,8 @@ services:
       - 1.1.1.1
     networks:
       - planner_network
+    env_file:
+      - bot/.env
     ports:
       - "9000:9000"
 
@@ -41,6 +43,9 @@ services:
   client:
     image: ${DOCKER_USER}/client:latest
     restart: unless-stopped
+    environment:
+      - VITE_API_URL=https://3dating.fun/api
+      - VITE_WS_URL=wss://3dating.fun
     depends_on:
       - db
       - bot
@@ -49,7 +54,11 @@ services:
       - planner_network
     ports:
       - "4173:4173"
-
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:4173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   proxy:
     build: ./nginx
     restart: unless-stopped
@@ -57,7 +66,8 @@ services:
       - db
       - bot
       - api
-      - client
+      - client:
+          condition: service_healthy
     networks:
       - planner_network
     ports:
@@ -66,7 +76,11 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
+      - certbot_data:/var/www/certbot
     command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"] 
+
+volumes:
+  certbot_data:
 
 networks:
   planner_network:
