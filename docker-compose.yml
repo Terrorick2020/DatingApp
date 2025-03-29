@@ -41,9 +41,6 @@ services:
   client:
     build: ./client
     restart: unless-stopped
-    environment:
-      - VITE_API_URL=https://3dating.fun/api
-      - VITE_WS_URL=wss://3dating.fun
     depends_on:
       - db
       - bot
