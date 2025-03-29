@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:latest
@@ -39,7 +37,7 @@ services:
       - "3000:3000"
 
   client:
-    image: ${DOCKER_USER}/client:latest
+    build: ./client
     restart: unless-stopped
     depends_on:
       - db
