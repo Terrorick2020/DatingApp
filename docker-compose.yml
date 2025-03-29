@@ -37,6 +37,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     networks:
       - planner_network
+    env_file:
+      - api/.env
     ports:
       - "3000:3000"
 
