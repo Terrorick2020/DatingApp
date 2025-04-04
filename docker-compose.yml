@@ -51,11 +51,6 @@ services:
       - planner_network
     ports:
       - "4173:4173"
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:4173"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
   proxy:
     build: ./nginx
     restart: unless-stopped
