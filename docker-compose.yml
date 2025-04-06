@@ -8,9 +8,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - planner_network
+    env_file:
+      - .env
     ports:
       - "5432:5432"
-  
+
   bot:
     image: ${DOCKER_USER}/bot:latest
     restart: unless-stopped
@@ -40,17 +42,23 @@ services:
     ports:
       - "3000:3000"
 
-  client:
-    build: ./client
-    restart: unless-stopped
-    depends_on:
-      - db
-      - bot
-      - api
-    networks:
-      - planner_network
-    ports:
-      - "4173:4173"
+  # client:
+  #   build: ./client
+  #   restart: unless-stopped
+  #   environment:
+  #     - VITE_API_URL=https://3dating.fun/api
+  #     - VITE_WS_URL=wss://3dating.fun
+  #   depends_on:
+  #     - db
+  #     - bot
+  #     - api
+  #   networks:
+  #     - planner_network
+  #   env_file:
+  #     - client/.env
+  #   ports:
+  #     - "4173:4173"
+
   proxy:
     build: ./nginx
     restart: unless-stopped
@@ -58,8 +66,7 @@ services:
       - db
       - bot
       - api
-      - client:
-          condition: service_healthy
+      # - client
     networks:
       - planner_network
     ports:
@@ -69,7 +76,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
       - certbot_data:/var/www/certbot
-    command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"] 
+    command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"]
 
 volumes:
   certbot_data:
