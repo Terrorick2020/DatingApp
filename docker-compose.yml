@@ -37,27 +37,29 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     networks:
       - planner_network
+    volumes:
+      - ./logs:/usr/app/logs
     env_file:
       - api/.env
     ports:
       - "3000:3000"
 
-  # client:
-  #   build: ./client
-  #   restart: unless-stopped
-  #   environment:
-  #     - VITE_API_URL=https://3dating.fun/api
-  #     - VITE_WS_URL=wss://3dating.fun
-  #   depends_on:
-  #     - db
-  #     - bot
-  #     - api
-  #   networks:
-  #     - planner_network
-  #   env_file:
-  #     - client/.env
-  #   ports:
-  #     - "4173:4173"
+  client:
+    build: ./client
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=https://3dating.fun/api
+      - VITE_WS_URL=wss://3dating.fun
+    depends_on:
+      - db
+      - bot
+      - api
+    networks:
+      - planner_network
+    env_file:
+      - client/.env
+    ports:
+      - "4173:4173"
 
   proxy:
     build: ./nginx
@@ -66,7 +68,7 @@ services:
       - db
       - bot
       - api
-      # - client
+      - client
     networks:
       - planner_network
     ports:
@@ -78,8 +80,50 @@ services:
       - certbot_data:/var/www/certbot
     command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"]
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - planner_network
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - planner_network
+    ports:
+      - "5601:5601"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logs:/usr/app/logs 
+    networks:
+      - planner_network
+    ports:
+      - "5044:5044"
+      - "5000:5000"
+      - "9600:9600"
+
 volumes:
   certbot_data:
+  elasticsearch_data:
 
 networks:
   planner_network:
