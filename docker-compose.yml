@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     ports:
-      - "5432:5432"
+      - '5432:5432'
 
   bot:
     image: ${DOCKER_USER}/bot:latest
@@ -25,7 +25,7 @@ services:
     env_file:
       - bot/.env
     ports:
-      - "9000:9000"
+      - '9000:9000'
 
   api:
     image: ${DOCKER_USER}/api:latest
@@ -42,7 +42,7 @@ services:
     env_file:
       - api/.env
     ports:
-      - "3000:3000"
+      - '3000:3000'
 
   client:
     build: ./client
@@ -59,7 +59,7 @@ services:
     env_file:
       - client/.env
     ports:
-      - "4173:4173"
+      - '4173:4173'
 
   proxy:
     build: ./nginx
@@ -72,13 +72,13 @@ services:
     networks:
       - planner_network
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
       - certbot_data:/var/www/certbot
-    command: ["/bin/bash", "-c", "nginx -g 'daemon off;'"]
+    command: ['/bin/bash', '-c', "nginx -g 'daemon off;'"]
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -92,7 +92,7 @@ services:
     networks:
       - planner_network
     ports:
-      - "9200:9200"
+      - '9200:9200'
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
@@ -104,7 +104,7 @@ services:
     networks:
       - planner_network
     ports:
-      - "5601:5601"
+      - '5601:5601'
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.12.0
@@ -113,13 +113,13 @@ services:
       - elasticsearch
     volumes:
       - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logs:/usr/app/logs 
+      - ./logs:/usr/app/logs
     networks:
       - planner_network
     ports:
-      - "5044:5044"
-      - "5000:5000"
-      - "9600:9600"
+      - '5044:5044'
+      - '5000:5000'
+      - '9600:9600'
 
 volumes:
   certbot_data:
