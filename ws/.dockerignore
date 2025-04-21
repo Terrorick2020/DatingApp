@@ -5,7 +5,7 @@ dist/
 test/
 
 */**/*.spec.ts
-package-lock.json
+bun.lock
 Dockerfile
 
 .env.example

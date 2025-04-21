@@ -120,6 +120,26 @@ services:
       - '5044:5044'
       - '5000:5000'
       - '9600:9600'
+    command: logstash -e 'input { file { path => "/usr/app/logs/*.log" start_position => "beginning" } } output { elasticsearch { hosts => ["http://elasticsearch:9200"] } }'
+
+    redis:
+      image: redis:7.2-alpine
+      container_name: redis
+      restart: unless-stopped
+      environment:
+        - REDIS_HOST=${REDIS_HOST}
+        - REDIS_PORT=${REDIS_PORT}
+        - REDIS_DB=${REDIS_DB}
+        - REDIS_PASSWORD=${REDIS_PASSWORD}
+      ports:
+        - '6379:6379'
+      networks:
+        - planner_network
+      volumes:
+        - ./redis/entrypoint.sh:/usr/local/bin/entrypoint.sh
+      command: ['sh', '/usr/local/bin/entrypoint.sh']
+      env_file:
+        - ./api/.env
 
 volumes:
   certbot_data:
