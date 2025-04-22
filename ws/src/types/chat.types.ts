@@ -1,13 +1,21 @@
-export interface Message {
-    id: number,
-    socketId: string,
-    isFrom: boolean
+import { WsClientToServerListen, WsServerToClientListener } from './base.types';
+import { UpdateChatDto } from '@/app/chats/dto/update-chat.dto';
+
+export enum EWriteType {
+    None = 'None',
+    Write = 'Write',
 }
 
-export interface ClientToServerListen {
-    message: (message: Message) => void
+export enum ChatsServerMethods {
+    UpdatedChat = 'updatedChat',
 }
 
-export interface ServerToClientListen {
-    message: (message: Message) => void
+export enum ChatsClientMethods {
+    UpdateData = 'updateData',
+}
+
+export interface ChatsClientToServerListen extends WsClientToServerListen {}
+
+export interface ChatsServerToClientListener extends WsServerToClientListener {
+    [ChatsClientMethods.UpdateData]: (updateData: UpdateChatDto) => Promise<void>
 }

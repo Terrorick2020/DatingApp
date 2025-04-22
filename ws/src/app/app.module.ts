@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ChatModule } from './chats/chat.module';
-import { LikesModule } from './likes/likes.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
-  imports: [ChatModule, LikesModule],
+  imports: [ChatModule, MessagesModule],
 })
 export class AppModule {};
