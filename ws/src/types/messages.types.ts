@@ -1,5 +1,5 @@
 import { ClientToServerEvents, ServerToClientEvents, ResErrData } from './base.types';
-import { MsgsUpdateIntrlocDto } from '@/app/messages/dto/update-interlocator.dto';
+import { MsgsUpdateIntrlocDto, MsgsUpdateLineStatInterLocDto } from '@/app/messages/dto/update-interlocator.dto';
 import { MsgsSendMsgDto } from '@/app/messages/dto/send-msg.dto';
 import { MsgsUpdateMsgDto } from '@/app/messages/dto/update-msg.dto';
 import { EWriteType } from './chat.types';
@@ -16,12 +16,14 @@ export enum EReadIt {
 }
 
 export enum MsgsServerMethods {
+    UpdateLineStat = 'UpdateLineStat',
     UpdateInterlocutor = 'UpdateInterlocutor',
     UpdateMsg = 'UpdateMsg',
     SendMsg = 'SendMsg',
 }
 
 export enum MsgsClientMethods {
+    UpdateLineStatData = 'UpdateLineStatData',
     UpdateInterData = 'UpdateInterData',
     UpdateMsgData = 'UpdateMsgData',
     SendMsgData = 'SendMsgData',
@@ -30,7 +32,6 @@ export enum MsgsClientMethods {
 export interface ResMsgsUpdateIntrloc {
     interlocator: string
     newWriteStat?: EWriteType
-    newLineStat?: ELineStat
 }
 
 interface ResMsgsBase {
@@ -58,6 +59,7 @@ export interface MsgsClientToServerEvents extends ClientToServerEvents {
 }
 
 export interface MsgsServerToClientEvents extends ServerToClientEvents {
+    [MsgsClientMethods.UpdateLineStatData]: (updateLineStatData: MsgsUpdateLineStatInterLocDto) => Promise<void>
     [MsgsClientMethods.UpdateInterData]: (updateInterData: ResMsgsUpdateIntrloc | ResErrData) => Promise<void>
     [MsgsClientMethods.UpdateMsgData]: (updateMsgData: ResMsgsUpdateMsg | ResErrData) => Promise<void>
     [MsgsClientMethods.SendMsgData]: (sendMsgData: ResMsgsSendMsg | ResErrData) => Promise<void>

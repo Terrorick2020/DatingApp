@@ -1,9 +1,10 @@
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { MessagesService } from './messages.service';
 import { BaseWsGateway } from '@/abstract/abstract.geteway';
 import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
 import { MsgsServerMethods, MsgsClientMethods } from '@/types/messages.types';
-import { MsgsUpdateIntrlocDto } from '@/app/messages/dto/update-interlocator.dto';
+import { MsgsUpdateIntrlocDto, MsgsUpdateLineStatInterLocDto } from '@/app/messages/dto/update-interlocator.dto';
 import { MsgsSendMsgDto } from '@/app/messages/dto/send-msg.dto';
 import { MsgsUpdateMsgDto } from '@/app/messages/dto/update-msg.dto';
 import type { MsgsClientToServerEvents, MsgsServerToClientEvents } from '@/types/messages.types';
@@ -26,6 +27,11 @@ export class MessagesGateway extends BaseWsGateway<MsgsClientToServerEvents, Msg
 
   protected async leaveRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
     return await this.msgsService.leaveRoom(connectionDto);
+  }
+
+  @EventPattern(MsgsServerMethods.UpdateLineStat)
+  async handleUpdateChat(@Payload() updateLineStatInterLocDto: MsgsUpdateLineStatInterLocDto): Promise<void> {
+    this.server.to(updateLineStatInterLocDto.roomName).emit(MsgsClientMethods.UpdateLineStatData, updateLineStatInterLocDto);
   }
 
   @SubscribeMessage(MsgsServerMethods.UpdateInterlocutor)
