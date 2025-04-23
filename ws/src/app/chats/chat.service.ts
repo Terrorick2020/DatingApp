@@ -1,27 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { ConnectionChatDto } from './dto/connection-chats.dto';
-import { WsConnectionStatus } from '@/types/base.types';
-import type { WsServerConnection } from '@/types/base.types';
+import { BaseWsService } from '@/abstract/abstract.service';
+import { ConfigService } from '@nestjs/config';
+
 
 @Injectable()
-export class ChatService {
-    async joinRoom(connectionDto: ConnectionChatDto): Promise<WsServerConnection> {
-        const resConnection: WsServerConnection = {
-            roomName: connectionDto.roomName,
-            telegramId: connectionDto.telegramId,
-            status: WsConnectionStatus.Success,
-        }
+export class ChatService extends BaseWsService {
+    constructor(private readonly configService: ConfigService) {
+        const host = configService.get<string>('API_HOST', 'localhost');
+        const port = configService.get<number>('API_PORT', 3000);
 
-        return resConnection;
-    }
-
-    async leaveRoom(connectionDto: ConnectionChatDto): Promise<WsServerConnection> {
-        const resConnection: WsServerConnection = {
-            roomName: connectionDto.roomName,
-            telegramId: connectionDto.telegramId,
-            status: WsConnectionStatus.Success,
-        }
-
-        return resConnection;
+        super(host, port);
     }
 }

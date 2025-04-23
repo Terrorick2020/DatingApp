@@ -1,8 +1,8 @@
 import { IsString, IsEnum, ValidateIf, IsOptional, IsNumber } from 'class-validator';
-import { BaseClientConnectionDto } from '@/types/base.types';
+import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
 import { EWriteType } from '@/types/chat.types';
 
-export class UpdateChatDto extends BaseClientConnectionDto {
+export class UpdateChatDto extends BaseWsConnectionDto {
     @IsString()
     chatId!: string
 

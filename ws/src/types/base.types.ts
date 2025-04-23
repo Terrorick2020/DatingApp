@@ -1,18 +1,9 @@
-import { IsString } from 'class-validator';
+import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+
 
 export enum WsConnectionStatus {
     Error = 'error',
     Success = 'success',
-}
-
-export class BaseClientConnectionDto {
-    @IsString()
-    roomName!: string
-}
-
-export interface WsClientConnection {
-    roomName: string
-    telegramId: string
 }
 
 export enum WsServerMethothod {
@@ -24,16 +15,18 @@ export enum WsClientMethods {
     Connect = 'connection'
 }
 
-export interface WsServerConnection extends WsClientConnection {
+export interface ResServerConnection {
+    roomName: string
+    telegramId: string
     status: WsConnectionStatus
 }
 
-export interface WsClientToServerListen {
-    [WsServerMethothod.JoinRoom]: (connection: WsClientConnection) => Promise<void>
-    [WsServerMethothod.LeaveRoom]: (connection: WsClientConnection) => Promise<void>
+export interface ClientToServerEvents {
+    [WsServerMethothod.JoinRoom]: (connection: BaseWsConnectionDto) => Promise<void>
+    [WsServerMethothod.LeaveRoom]: (connection: BaseWsConnectionDto) => Promise<void>
 }
 
-export interface WsServerToClientListener {
-    [WsClientMethods.Connect]: (connection: WsServerConnection) => Promise<void>
-    [WsClientMethods.Connect]: (connection: WsServerConnection) => Promise<void>
+export interface ServerToClientEvents {
+    [WsClientMethods.Connect]: (connection: ResServerConnection) => Promise<void>
+    [WsClientMethods.Connect]: (connection: ResServerConnection) => Promise<void>
 }
