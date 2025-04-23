@@ -1,13 +1,18 @@
+import {
+  MsgsServerMethods,
+  MsgsClientMethods,
+  type MsgsClientToServerEvents,
+  type MsgsServerToClientEvents,
+} from '@/types/messages.types';
+
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { MessagesService } from './messages.service';
 import { BaseWsGateway } from '@/abstract/abstract.geteway';
 import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
-import { MsgsServerMethods, MsgsClientMethods } from '@/types/messages.types';
 import { MsgsUpdateIntrlocDto, MsgsUpdateLineStatInterLocDto } from '@/app/messages/dto/update-interlocator.dto';
 import { MsgsSendMsgDto } from '@/app/messages/dto/send-msg.dto';
 import { MsgsUpdateMsgDto } from '@/app/messages/dto/update-msg.dto';
-import type { MsgsClientToServerEvents, MsgsServerToClientEvents } from '@/types/messages.types';
 import type { ResServerConnection, ResErrData } from '@/types/base.types';
 
 @WebSocketGateway(8080, {
