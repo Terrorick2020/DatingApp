@@ -21,12 +21,17 @@ export interface ResServerConnection {
     status: WsConnectionStatus
 }
 
+export interface ResErrData {
+    message: string
+    status: WsConnectionStatus
+}
+
 export interface ClientToServerEvents {
     [WsServerMethothod.JoinRoom]: (connection: BaseWsConnectionDto) => Promise<void>
     [WsServerMethothod.LeaveRoom]: (connection: BaseWsConnectionDto) => Promise<void>
 }
 
 export interface ServerToClientEvents {
-    [WsClientMethods.Connect]: (connection: ResServerConnection) => Promise<void>
-    [WsClientMethods.Connect]: (connection: ResServerConnection) => Promise<void>
+    [WsClientMethods.Connect]: (connection: ResServerConnection | ResErrData) => Promise<void>
+    [WsClientMethods.Connect]: (connection: ResServerConnection | ResErrData) => Promise<void>
 }

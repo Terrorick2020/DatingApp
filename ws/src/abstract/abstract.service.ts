@@ -2,11 +2,12 @@ import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservice
 import { BaseWsConnectionDto } from './dto/connection.dto';
 import { WsConnectionStatus } from '@/types/base.types';
 import { firstValueFrom } from 'rxjs';
-import { type ResServerConnection, WsServerMethothod } from '@/types/base.types';
+import { type ResServerConnection, WsServerMethothod, ResErrData } from '@/types/base.types';
 
 
 export abstract class BaseWsService {
     protected clientProxy: ClientProxy;
+    protected readonly errRes: ResErrData;
 
     constructor(protected readonly host: string, protected readonly port: number) {
         this.clientProxy = ClientProxyFactory.create({
@@ -16,35 +17,42 @@ export abstract class BaseWsService {
             port: this.port,
           },
         });
-    }
-    
-    protected async sendRequest(
-        pattern: WsServerMethothod,
-        data: BaseWsConnectionDto
-    ): Promise<ResServerConnection> {
-        const errData: ResServerConnection = {
-            roomName: data.roomName,
-            telegramId: data.telegramId,
-            status: WsConnectionStatus.Success,
-        };
 
+        this.errRes = {
+            message: 'При выполнении действия возникла ошибка!',
+            status: WsConnectionStatus.Error,
+        }
+    }
+
+    protected async sendRequest<TPattern, TRequest, TResponce>(
+        pattern: TPattern,
+        data: TRequest,
+    ): Promise<TResponce | ResErrData> {
         try {
             const response = await firstValueFrom(
-                this.clientProxy.send<ResServerConnection, BaseWsConnectionDto>(pattern, data),
-                { defaultValue: {...errData} }
+                this.clientProxy.send<TResponce, TRequest>(pattern, data),
+                { defaultValue: {...this.errRes} }
             );
 
             return response;
         } catch {
-            return errData;
+            return this.errRes;
         }
     }
 
-    async joinRoom(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection> {
-        return this.sendRequest(WsServerMethothod.JoinRoom, connectionDto);
+    async joinRoom(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
+        return await this.sendRequest<
+            WsServerMethothod,
+            BaseWsConnectionDto,
+            ResServerConnection
+        > (WsServerMethothod.JoinRoom, connectionDto)
     }
 
-    async leaveRoom(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection> {
-        return this.sendRequest(WsServerMethothod.LeaveRoom, connectionDto);
+    async leaveRoom(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
+        return await this.sendRequest<
+            WsServerMethothod,
+            BaseWsConnectionDto,
+            ResServerConnection
+        > (WsServerMethothod.LeaveRoom, connectionDto)
     }
 }

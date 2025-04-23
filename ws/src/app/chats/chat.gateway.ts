@@ -8,7 +8,7 @@ import { AddChatDto } from './dto/add-chat.dto';
 import { DeleteChatDto } from './dto/delete-chat.dto';
 import { BaseWsGateway } from '@/abstract/abstract.geteway';
 import type { ChatsClientToServerEvents, ChatsServerToClientEvents } from '@/types/chat.types';
-import type { ResServerConnection } from '@/types/base.types';
+import type { ResServerConnection, ResErrData } from '@/types/base.types';
 
 
 @WebSocketGateway(8080, {
@@ -22,11 +22,11 @@ export class ChatGateway extends BaseWsGateway<ChatsClientToServerEvents, ChatsS
     super();
   }
 
-  protected async joinRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection> {
+  protected async joinRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
     return await this.chatService.joinRoom(connectionDto);
   }
 
-  protected async leaveRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection> {
+  protected async leaveRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
     return await this.chatService.leaveRoom(connectionDto);
   }
 

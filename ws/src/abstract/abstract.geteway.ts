@@ -12,6 +12,7 @@ import {
     type ClientToServerEvents,
     type ServerToClientEvents,
     type ResServerConnection,
+    type ResErrData,
 } from '@/types/base.types';
 
 import { Server, Socket } from 'socket.io';
@@ -27,18 +28,18 @@ export abstract class BaseWsGateway<
 
     protected abstract joinRoomService(
         connectionDto: BaseWsConnectionDto,
-    ): Promise<ResServerConnection>;
+    ): Promise<ResServerConnection | ResErrData>;
 
     protected abstract leaveRoomService(
         connectionDto: BaseWsConnectionDto,
-    ): Promise<ResServerConnection>;
+    ): Promise<ResServerConnection | ResErrData>;
 
     @SubscribeMessage(WsServerMethothod.JoinRoom)
     async handleJoinRoom(
         @MessageBody() connectionDto: BaseWsConnectionDto,
         @ConnectedSocket() client: Socket,
     ): Promise<void> {
-        const resJoinRoom: ResServerConnection = await this.joinRoomService(connectionDto);
+        const resJoinRoom: ResServerConnection | ResErrData = await this.joinRoomService(connectionDto);
 
         if (resJoinRoom.status === WsConnectionStatus.Success) {
             client.join(connectionDto.roomName);
@@ -52,7 +53,7 @@ export abstract class BaseWsGateway<
         @MessageBody() connectionDto: BaseWsConnectionDto,
         @ConnectedSocket() client: Socket,
     ): Promise<void> {
-        const resLeaveRoom: ResServerConnection = await this.leaveRoomService(connectionDto);
+        const resLeaveRoom: ResServerConnection | ResErrData = await this.leaveRoomService(connectionDto);
 
         client.leave(connectionDto.roomName);
         client.emit(WsClientMethods.Connect, resLeaveRoom);

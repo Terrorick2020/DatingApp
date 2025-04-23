@@ -1,4 +1,4 @@
-import { ClientToServerEvents, ServerToClientEvents } from './base.types';
+import { ClientToServerEvents, ServerToClientEvents, ResErrData } from './base.types';
 import { UpdateChatDto } from '@/app/chats/dto/update-chat.dto';
 import { AddChatDto } from '@/app/chats/dto/add-chat.dto';
 import { DeleteChatDto } from '@/app/chats/dto/delete-chat.dto';
@@ -24,9 +24,9 @@ export enum ChatsClientMethods {
 export interface ChatsClientToServerEvents extends ClientToServerEvents {}
 
 export interface ChatsServerToClientEvents extends ServerToClientEvents {
-    [ChatsClientMethods.UpdateData]: (updateData: UpdateChatDto) => Promise<void>
-    [ChatsClientMethods.AddData]: (addData: AddChatDto) => Promise<void>
-    [ChatsClientMethods.DeleteData]: (deleteData: DeleteChatDto) => Promise<void>
+    [ChatsClientMethods.UpdateData]: (updateData: UpdateChatDto | ResErrData) => Promise<void>
+    [ChatsClientMethods.AddData]: (addData: AddChatDto | ResErrData) => Promise<void>
+    [ChatsClientMethods.DeleteData]: (deleteData: DeleteChatDto | ResErrData) => Promise<void>
 }
 
 export interface ChatsToUser {
