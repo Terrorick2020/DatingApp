@@ -6,9 +6,9 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class ChatService extends BaseWsService {
     constructor(private readonly configService: ConfigService) {
-        const host = configService.get<string>('API_HOST', 'localhost');
-        const port = configService.get<number>('API_PORT', 3000);
+        const host = configService.get<string>('API_HOST');
+        const port = configService.get<number>('CHATS_PORT');
 
-        super(host, port);
+        host && port && super(host, port);
     }
 }

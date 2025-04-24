@@ -17,10 +17,10 @@ import { type ResErrData, WsConnectionStatus } from '@/types/base.types';
 @Injectable()
 export class MessagesService extends BaseWsService {
     constructor(private readonly configService: ConfigService) {
-        const host = configService.get<string>('API_HOST', 'localhost');
-        const port = configService.get<number>('API_PORT', 3000);
+        const host = configService.get<string>('API_HOST');
+        const port = configService.get<number>('MSGS_PORT');
 
-        super(host, port);
+        host && port && super(host, port);
     }
 
     async updateInterlocutor(msgsUpdateIntrlocDto: MsgsUpdateIntrlocDto): Promise<ResMsgsUpdateIntrloc | ResErrData> {

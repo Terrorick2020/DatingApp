@@ -1,21 +1,20 @@
 const API_HOST: string = process.env.API_HOST ?? '';
-const API_PORT: number = Number(process.env.API_PORT);
-
-const CHATS_ENDPOINT: string = process.env.CHATS_ENDPOINT ?? '';
-const MSGS_ENDPOINT: string  = process.env.MSGS_ENDPOINT ?? '';
+const CHATS_PORT: number = Number(process.env.CHATS_PORT);
+const MSGS_PORT: number = Number(process.env.MSGS_PORT);
+const MATCH_PORT: number = Number(process.env.MATCH_PORT);
 
 if(
-    !API_HOST       ||
-    isNaN(API_PORT) ||
-    !CHATS_ENDPOINT ||
-    !MSGS_ENDPOINT
+    !API_HOST         ||
+    isNaN(CHATS_PORT) ||
+    isNaN(MSGS_PORT)  ||
+    isNaN(MATCH_PORT)
 ) {
     throw new Error('Some environment variables are missing!');
 }
 
 export default () => ({
     API_HOST,
-    API_PORT,
-    CHATS_ENDPOINT,
-    MSGS_ENDPOINT,
+    CHATS_PORT,
+    MSGS_PORT,
+    MATCH_PORT,
 });
