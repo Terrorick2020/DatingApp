@@ -1,48 +1,47 @@
-import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { WebSocketGateway } from '@nestjs/websockets';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { ChatService } from './chat.service';
-import type { ClientToServerListen, Message, ServerToClientListen } from '@/types/chat.types';
+import { ChatsServerMethods, ChatsClientMethods } from '@/types/chat.types';
+import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+import { UpdateChatDto } from './dto/update-chat.dto';
+import { AddChatDto } from './dto/add-chat.dto';
+import { DeleteChatDto } from './dto/delete-chat.dto';
+import { BaseWsGateway } from '@/abstract/abstract.geteway';
+import type { ChatsClientToServerEvents, ChatsServerToClientEvents } from '@/types/chat.types';
+import type { ResServerConnection, ResErrData } from '@/types/base.types';
+
 
 @WebSocketGateway(8080, {
-  namespace: 'chat',
+  namespace: 'chats',
   cors: {
     origin: '*'
   }
 })
-export class ChatGateway {
-  @WebSocketServer() server: Server<ClientToServerListen, ServerToClientListen>;
-
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(@MessageBody() roomName: string, @ConnectedSocket() client: Socket): void {
-    client.join(roomName);
-
-    const message: Message = {
-      id: 0,
-      socketId: `${client.id} присоединился к комнате ${roomName}`,
-      isFrom: false,
-    };
-
-    this.server.to(roomName).emit('message', message);
+export class ChatGateway extends BaseWsGateway<ChatsClientToServerEvents, ChatsServerToClientEvents> {
+  constructor(private readonly chatService: ChatService) {
+    super();
   }
 
-  @SubscribeMessage('sendMessage')
-  handleMessage(
-    @MessageBody() { roomName, message }: { roomName: string, message: Message },
-    @ConnectedSocket() client: Socket,
-  ): void {
-    this.server.to(roomName).emit('message', message)
+  protected async joinRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
+    return await this.chatService.joinRoom(connectionDto);
   }
 
-  @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(@MessageBody() roomName: string, @ConnectedSocket() client: Socket): void {
-    client.leave(roomName);
+  protected async leaveRoomService(connectionDto: BaseWsConnectionDto): Promise<ResServerConnection | ResErrData> {
+    return await this.chatService.leaveRoom(connectionDto);
+  }
 
-    const message: Message = {
-      id: 0,
-      socketId: `${client.id} присоединился к комнате ${roomName}`,
-      isFrom: false,
-    };
+  @EventPattern(ChatsServerMethods.UpdatedChat)
+  async handleUpdateChat(@Payload() updateDto: UpdateChatDto): Promise<void> {
+    this.server.to(updateDto.roomName).emit(ChatsClientMethods.UpdateData, updateDto)
+  }
 
-    this.server.to(roomName).emit('message', message);
+  @EventPattern(ChatsServerMethods.AddChat)
+  async handleAddChat(@Payload() addChatDto: AddChatDto): Promise<void> {
+    this.server.to(addChatDto.roomName).emit(ChatsClientMethods.AddData, addChatDto)
+  }
+
+  @EventPattern(ChatsServerMethods.DeleteChat)
+  async handleDeleteChat(@Payload() deleteChatDto: DeleteChatDto): Promise<void> {
+    this.server.to(deleteChatDto.roomName).emit(ChatsClientMethods.DeleteData, deleteChatDto)
   }
 }
