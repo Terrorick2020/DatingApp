@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ChatGateway } from './chat.gateway';
-import { ChatService } from './chat.service';
+import { Module } from '@nestjs/common'
+import { ChatGateway } from './chat.gateway'
+import { ChatService } from './chat.service'
+import { RedisModule } from '../redis/redis.module'
 
 @Module({
-  providers: [ChatGateway, ChatService]
+	imports: [RedisModule],
+	providers: [ChatGateway, ChatService],
 })
-export class ChatModule {};
+export class ChatModule {}
