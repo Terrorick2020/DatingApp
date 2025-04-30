@@ -1,44 +1,44 @@
 import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
 import type { ResErrData, ResServerConnection } from '@/types/base.types'
 import {
-	MatchClientMethods,
-	MatchServerMethods,
-	type MatchClientToServerEvents,
-	type MatchServerToClientEvents,
-} from '@/types/match.type'
+	LikeClientMethods,
+	LikeServerMethods,
+	type LikeClientToServerEvents,
+	type LikeServerToClientEvents,
+} from '@/types/like.types'
 import { EventPattern, Payload } from '@nestjs/microservices'
 import { WebSocketGateway } from '@nestjs/websockets'
 import { BaseWsGateway } from '~/src/abstract/abstract.gateway'
-import { MatchTriggerDto } from './dto/trigger.dto'
-import { MatchService } from './match.service'
+import { LikeTriggerDto } from './dto/trigger.dto'
+import { LikeService } from './like.service'
 
 @WebSocketGateway()
-export class MatchGateway extends BaseWsGateway<
-	MatchClientToServerEvents,
-	MatchServerToClientEvents
+export class LikeGateway extends BaseWsGateway<
+	LikeClientToServerEvents,
+	LikeServerToClientEvents
 > {
-	constructor(private readonly chatService: MatchService) {
+	constructor(private readonly likeService: LikeService) {
 		super()
 	}
 
 	protected async joinRoomService(
 		connectionDto: BaseWsConnectionDto
 	): Promise<ResServerConnection | ResErrData> {
-		return await this.chatService.joinRoom(connectionDto)
+		return await this.likeService.joinRoom(connectionDto)
 	}
 
 	protected async leaveRoomService(
 		connectionDto: BaseWsConnectionDto
 	): Promise<ResServerConnection | ResErrData> {
-		return await this.chatService.leaveRoom(connectionDto)
+		return await this.likeService.leaveRoom(connectionDto)
 	}
 
-	@EventPattern(MatchServerMethods.Trigger)
-	async handleUpdateChat(
-		@Payload() triggerDto: MatchTriggerDto
+	@EventPattern(LikeServerMethods.Trigger)
+	async handleLikeTrigger(
+		@Payload() triggerDto: LikeTriggerDto
 	): Promise<void> {
 		this.server
 			.to(triggerDto.roomName)
-			.emit(MatchClientMethods.TriggerData, triggerDto)
+			.emit(LikeClientMethods.TriggerData, triggerDto)
 	}
 }

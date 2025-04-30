@@ -1,25 +1,25 @@
 // ws/src/app/chats/chat.gateway.ts
-import {
-	WebSocketGateway,
-	SubscribeMessage,
-	MessageBody,
-} from '@nestjs/websockets'
-import { WsConnectionStatus } from '@/types/base.types'
-import { EventPattern, Payload } from '@nestjs/microservices'
-import { ChatService } from './chat.service'
-import { ChatsServerMethods, ChatsClientMethods } from '@/types/chat.types'
 import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import { UpdateChatDto } from './dto/update-chat.dto'
-import { AddChatDto } from './dto/add-chat.dto'
-import { DeleteChatDto } from './dto/delete-chat.dto'
-import { BaseWsGateway } from '@/abstract/abstract.geteway'
+import type { ResErrData, ResServerConnection } from '@/types/base.types'
+import { WsConnectionStatus } from '@/types/base.types'
 import type {
 	ChatsClientToServerEvents,
 	ChatsServerToClientEvents,
 } from '@/types/chat.types'
-import type { ResServerConnection, ResErrData } from '@/types/base.types'
+import { ChatsClientMethods, ChatsServerMethods } from '@/types/chat.types'
 import { Injectable } from '@nestjs/common'
+import { EventPattern, Payload } from '@nestjs/microservices'
+import {
+	MessageBody,
+	SubscribeMessage,
+	WebSocketGateway,
+} from '@nestjs/websockets'
+import { BaseWsGateway } from '~/src/abstract/abstract.gateway'
 import { RedisService } from '../redis/redis.service'
+import { ChatService } from './chat.service'
+import { AddChatDto } from './dto/add-chat.dto'
+import { DeleteChatDto } from './dto/delete-chat.dto'
+import { UpdateChatDto } from './dto/update-chat.dto'
 
 @WebSocketGateway(8080, {
 	namespace: 'chats',

@@ -1,18 +1,18 @@
-import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets'
-import { EventPattern, Payload } from '@nestjs/microservices'
-import { ComplaintService } from './complaint.service'
-import { BaseWsGateway } from '@/abstract/abstract.geteway'
 import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import { ComplaintCreateDto } from './dto/complaint-create.dto'
-import { ComplaintUpdateDto } from './dto/complaint-update.dto'
+import type { ResErrData, ResServerConnection } from '@/types/base.types'
 import {
-	ComplaintServerMethods,
 	ComplaintClientMethods,
 	ComplaintClientToServerEvents,
+	ComplaintServerMethods,
 	ComplaintServerToClientEvents,
 	ComplaintUpdateResponse,
 } from '@/types/complaint.types'
-import type { ResServerConnection, ResErrData } from '@/types/base.types'
+import { EventPattern, Payload } from '@nestjs/microservices'
+import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets'
+import { BaseWsGateway } from '~/src/abstract/abstract.gateway'
+import { ComplaintService } from './complaint.service'
+import { ComplaintCreateDto } from './dto/complaint-create.dto'
+import { ComplaintUpdateDto } from './dto/complaint-update.dto'
 
 @WebSocketGateway(8080, {
 	namespace: 'complaint',

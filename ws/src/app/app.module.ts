@@ -6,8 +6,9 @@ import { MatchModule } from './match/match.module'
 
 import serverConfig from '@/config/server.config'
 import connectionConfig from '@/config/connection.config'
-import { ComplaintModule } from './complaint/complain.module'
+import { ComplaintModule } from './complaint/complaint.module'
 import { RedisModule } from './redis/redis.module'
+import { LikeModule } from './like/like.module'
 
 @Module({
 	imports: [
@@ -20,6 +21,7 @@ import { RedisModule } from './redis/redis.module'
 		MessagesModule,
 		MatchModule,
 		ComplaintModule,
+		LikeModule,
 		RedisModule,
 	],
 })

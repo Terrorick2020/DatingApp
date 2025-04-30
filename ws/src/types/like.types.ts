@@ -1,15 +1,22 @@
 import { ClientToServerEvents, ServerToClientEvents } from './base.types'
-import { MatchTriggerDto } from '@/app/like/dto/trigger.dto'
-import { MatchClientMethods } from './match.type'
+import { LikeTriggerDto } from '@/app/like/dto/trigger.dto'
+
+export interface TrigFromUser {
+	id: string
+	avatar: string
+	name: string
+}
+
+export enum LikeServerMethods {
+	Trigger = 'Trigger',
+}
 
 export enum LikeClientMethods {
-	MatchData = 'MatchData',
+	TriggerData = 'TriggerData',
 }
 
 export interface LikeClientToServerEvents extends ClientToServerEvents {}
 
 export interface LikeServerToClientEvents extends ServerToClientEvents {
-	[MatchClientMethods.TriggerData]: (
-		triggerDto: MatchTriggerDto
-	) => Promise<void>
+	[LikeClientMethods.TriggerData]: (triggerDto: LikeTriggerDto) => Promise<void>
 }
