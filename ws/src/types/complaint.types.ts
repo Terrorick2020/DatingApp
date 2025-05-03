@@ -1,10 +1,10 @@
 import {
 	ClientToServerEvents,
 	ServerToClientEvents,
-	ResErrData,
 } from './base.types'
 import { ComplaintCreateDto } from '@/app/complaint/dto/complaint-create.dto'
 import { ComplaintUpdateDto } from '@/app/complaint/dto/complaint-update.dto'
+import { ResConnectionDto } from '../abstract/dto/response.dto'
 
 export enum ComplaintStatus {
 	PENDING = 'PENDING',
@@ -21,9 +21,9 @@ export enum ComplaintType {
 	SPAM = 'SPAM',
 	UNDERAGE_USER = 'UNDERAGE_USER',
 	OTHER = 'OTHER',
-}
+} 
 
-export enum ComplaintServerMethods {
+export enum SendComplaintTcpPatterns {
 	CreateComplaint = 'CreateComplaint',
 	UpdateComplaint = 'UpdateComplaint',
 	ComplaintStatusChanged = 'ComplaintStatusChanged',
@@ -50,20 +50,20 @@ export interface ComplaintUpdateResponse {
 }
 
 export interface ComplaintClientToServerEvents extends ClientToServerEvents {
-	[ComplaintServerMethods.CreateComplaint]: (
+	[SendComplaintTcpPatterns.CreateComplaint]: (
 		complaintData: ComplaintCreateDto
 	) => Promise<void>
-	[ComplaintServerMethods.UpdateComplaint]: (
+	[SendComplaintTcpPatterns.UpdateComplaint]: (
 		complaintData: ComplaintUpdateDto
 	) => Promise<void>
 }
 
 export interface ComplaintServerToClientEvents extends ServerToClientEvents {
 	[ComplaintClientMethods.ComplaintCreated]: (
-		response: ComplaintCreateResponse | ResErrData
+		response: ComplaintCreateResponse | ResConnectionDto
 	) => Promise<void>
 	[ComplaintClientMethods.ComplaintUpdated]: (
-		response: ComplaintUpdateResponse | ResErrData
+		response: ComplaintUpdateResponse | ResConnectionDto
 	) => Promise<void>
 	[ComplaintClientMethods.ComplaintStatusUpdated]: (
 		response: ComplaintUpdateResponse

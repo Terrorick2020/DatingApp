@@ -1,7 +1,3 @@
-// ws/src/app/chats/chat.gateway.ts
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import type { ResErrData, ResServerConnection } from '@/types/base.types'
-import { WsConnectionStatus } from '@/types/base.types'
 import type {
 	ChatsClientToServerEvents,
 	ChatsServerToClientEvents,
@@ -21,7 +17,7 @@ import { AddChatDto } from './dto/add-chat.dto'
 import { DeleteChatDto } from './dto/delete-chat.dto'
 import { UpdateChatDto } from './dto/update-chat.dto'
 
-@WebSocketGateway(8080, {
+@WebSocketGateway(7000, {
 	namespace: 'chats',
 	cors: {
 		origin: '*',
@@ -29,6 +25,7 @@ import { UpdateChatDto } from './dto/update-chat.dto'
 })
 @Injectable()
 export class ChatGateway extends BaseWsGateway<
+	ChatService,
 	ChatsClientToServerEvents,
 	ChatsServerToClientEvents
 > {
@@ -36,65 +33,7 @@ export class ChatGateway extends BaseWsGateway<
 		private readonly chatService: ChatService,
 		private readonly redisService: RedisService
 	) {
-		super()
-	}
-
-	protected async joinRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		try {
-			// Кешируем информацию о пользователе в Redis
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:status`,
-				'online',
-				3600
-			)
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:room`,
-				connectionDto.roomName,
-				3600
-			)
-
-			// Логируем подключение пользователя
-			console.log(
-				`User ${connectionDto.telegramId} joined room ${connectionDto.roomName}`
-			)
-
-			return await this.chatService.joinRoom(connectionDto)
-		} catch (error) {
-			console.error('Error in joinRoomService:', error)
-			return {
-				message: 'Error joining room',
-				status: WsConnectionStatus.Error,
-			}
-		}
-	}
-
-	protected async leaveRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		try {
-			// Обновляем статус пользователя в Redis
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:status`,
-				'offline',
-				3600
-			)
-			await this.redisService.del(`user:${connectionDto.telegramId}:room`)
-
-			// Логируем отключение пользователя
-			console.log(
-				`User ${connectionDto.telegramId} left room ${connectionDto.roomName}`
-			)
-
-			return await this.chatService.leaveRoom(connectionDto)
-		} catch (error) {
-			console.error('Error in leaveRoomService:', error)
-			return {
-				message: 'Error leaving room',
-				status: WsConnectionStatus.Error,
-			}
-		}
+		super(chatService)
 	}
 
 	// Слушаем события от API сервиса по TCP

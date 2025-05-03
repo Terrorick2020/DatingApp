@@ -5,10 +5,10 @@ import {
 	IsOptional,
 	IsNumber,
 } from 'class-validator'
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
+import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { EWriteType } from '@/types/chat.types'
 
-export class UpdateChatDto extends BaseWsConnectionDto {
+export class UpdateChatDto extends ConnectionDto {
 	@IsString()
 	chatId!: string
 

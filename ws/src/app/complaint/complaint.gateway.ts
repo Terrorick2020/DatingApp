@@ -1,9 +1,7 @@
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import type { ResErrData, ResServerConnection } from '@/types/base.types'
 import {
 	ComplaintClientMethods,
 	ComplaintClientToServerEvents,
-	ComplaintServerMethods,
+	SendComplaintTcpPatterns,
 	ComplaintServerToClientEvents,
 	ComplaintUpdateResponse,
 } from '@/types/complaint.types'
@@ -14,33 +12,22 @@ import { ComplaintService } from './complaint.service'
 import { ComplaintCreateDto } from './dto/complaint-create.dto'
 import { ComplaintUpdateDto } from './dto/complaint-update.dto'
 
-@WebSocketGateway(8080, {
+@WebSocketGateway(7000, {
 	namespace: 'complaint',
 	cors: {
 		origin: '*',
 	},
 })
 export class ComplaintGateway extends BaseWsGateway<
+	ComplaintService,
 	ComplaintClientToServerEvents,
 	ComplaintServerToClientEvents
 > {
 	constructor(private readonly complaintService: ComplaintService) {
-		super()
+		super(complaintService)
 	}
 
-	protected async joinRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.complaintService.joinRoom(connectionDto)
-	}
-
-	protected async leaveRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.complaintService.leaveRoom(connectionDto)
-	}
-
-	@SubscribeMessage(ComplaintServerMethods.CreateComplaint)
+	@SubscribeMessage(SendComplaintTcpPatterns.CreateComplaint)
 	async handleCreateComplaint(
 		@Payload() complaintData: ComplaintCreateDto
 	): Promise<void> {
@@ -50,7 +37,7 @@ export class ComplaintGateway extends BaseWsGateway<
 			.emit(ComplaintClientMethods.ComplaintCreated, response)
 	}
 
-	@SubscribeMessage(ComplaintServerMethods.UpdateComplaint)
+	@SubscribeMessage(SendComplaintTcpPatterns.UpdateComplaint)
 	async handleUpdateComplaint(
 		@Payload() complaintData: ComplaintUpdateDto
 	): Promise<void> {
@@ -60,7 +47,7 @@ export class ComplaintGateway extends BaseWsGateway<
 			.emit(ComplaintClientMethods.ComplaintUpdated, response)
 	}
 
-	@EventPattern(ComplaintServerMethods.ComplaintStatusChanged)
+	@EventPattern(SendComplaintTcpPatterns.ComplaintStatusChanged)
 	async handleComplaintStatusChanged(
 		@Payload() statusUpdate: ComplaintUpdateResponse
 	): Promise<void> {

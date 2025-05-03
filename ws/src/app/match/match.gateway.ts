@@ -1,5 +1,3 @@
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import type { ResErrData, ResServerConnection } from '@/types/base.types'
 import {
 	MatchClientMethods,
 	MatchServerMethods,
@@ -14,23 +12,12 @@ import { MatchService } from './match.service'
 
 @WebSocketGateway()
 export class MatchGateway extends BaseWsGateway<
+	MatchService,
 	MatchClientToServerEvents,
 	MatchServerToClientEvents
 > {
-	constructor(private readonly chatService: MatchService) {
-		super()
-	}
-
-	protected async joinRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.chatService.joinRoom(connectionDto)
-	}
-
-	protected async leaveRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.chatService.leaveRoom(connectionDto)
+	constructor(private readonly matchService: MatchService) {
+		super(matchService)
 	}
 
 	@EventPattern(MatchServerMethods.Trigger)

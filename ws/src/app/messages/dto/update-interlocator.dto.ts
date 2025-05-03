@@ -1,15 +1,15 @@
 import { IsEnum } from 'class-validator';
 import { EWriteType } from '@/types/chat.types';
 import { ELineStat } from '@/types/messages.types';
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+import { ConnectionDto } from '@/abstract/dto/connection.dto';
 
 
-export class MsgsUpdateIntrlocDto extends BaseWsConnectionDto {
+export class MsgsUpdateIntrlocDto extends ConnectionDto {
     @IsEnum(EWriteType)
     newWriteStat!: EWriteType
 }
 
-export class MsgsUpdateLineStatInterLocDto extends BaseWsConnectionDto {
+export class MsgsUpdateLineStatInterLocDto extends ConnectionDto {
     @IsEnum(ELineStat)
     newLineStat!: ELineStat
 }

@@ -1,5 +1,3 @@
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import type { ResErrData, ResServerConnection } from '@/types/base.types'
 import {
 	LikeClientMethods,
 	LikeServerMethods,
@@ -14,23 +12,12 @@ import { LikeService } from './like.service'
 
 @WebSocketGateway()
 export class LikeGateway extends BaseWsGateway<
+	LikeService,
 	LikeClientToServerEvents,
 	LikeServerToClientEvents
 > {
 	constructor(private readonly likeService: LikeService) {
-		super()
-	}
-
-	protected async joinRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.likeService.joinRoom(connectionDto)
-	}
-
-	protected async leaveRoomService(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		return await this.likeService.leaveRoom(connectionDto)
+		super(likeService)
 	}
 
 	@EventPattern(LikeServerMethods.Trigger)

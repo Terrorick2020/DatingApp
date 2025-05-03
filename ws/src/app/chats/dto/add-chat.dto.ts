@@ -1,8 +1,8 @@
 import { IsString, IsNotEmpty, IsNumber } from 'class-validator';
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+import { ConnectionDto } from '@/abstract/dto/connection.dto';
 import type { ChatsToUser } from '@/types/chat.types';
 
-export class AddChatDto extends BaseWsConnectionDto {
+export class AddChatDto extends ConnectionDto {
     @IsString()
     chatId!: string
 

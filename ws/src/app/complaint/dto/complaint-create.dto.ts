@@ -1,8 +1,8 @@
 import { IsString, IsEnum, IsOptional } from 'class-validator'
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
+import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { ComplaintType } from '@/types/complaint.types'
 
-export class ComplaintCreateDto extends BaseWsConnectionDto {
+export class ComplaintCreateDto extends ConnectionDto {
 	@IsString()
 	fromUserId!: string
 

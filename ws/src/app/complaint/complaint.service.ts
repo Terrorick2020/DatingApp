@@ -4,41 +4,35 @@ import { ConfigService } from '@nestjs/config'
 import { ComplaintCreateDto } from './dto/complaint-create.dto'
 import { ComplaintUpdateDto } from './dto/complaint-update.dto'
 import {
-	ComplaintServerMethods,
+	SendComplaintTcpPatterns,
 	ComplaintCreateResponse,
 	ComplaintUpdateResponse,
 } from '@/types/complaint.types'
-import { ResErrData } from '@/types/base.types'
+import { ResConnectionDto } from '~/src/abstract/dto/response.dto'
 
 @Injectable()
 export class ComplaintService extends BaseWsService {
-	constructor(private readonly configService: ConfigService) {
-		const host = configService.get<string>('API_HOST')
-		const port = configService.get<number>('COMPLAINT_PORT')
-
-		super(host || 'localhost', port || 3005)
-
-		// После вызова super() можно безопасно присваивать this
-		this.configService = configService
+	constructor(protected readonly configService: ConfigService) {
+		super(configService)
 	}
 
 	async createComplaint(
 		complaintData: ComplaintCreateDto
-	): Promise<ComplaintCreateResponse | ResErrData> {
+	): Promise<ComplaintCreateResponse | ResConnectionDto> {
 		return await this.sendRequest<
-			ComplaintServerMethods,
+			SendComplaintTcpPatterns,
 			ComplaintCreateDto,
 			ComplaintCreateResponse
-		>(ComplaintServerMethods.CreateComplaint, complaintData)
+		>(SendComplaintTcpPatterns.CreateComplaint, complaintData)
 	}
 
 	async updateComplaint(
 		complaintData: ComplaintUpdateDto
-	): Promise<ComplaintUpdateResponse | ResErrData> {
+	): Promise<ComplaintUpdateResponse | ResConnectionDto> {
 		return await this.sendRequest<
-			ComplaintServerMethods,
+			SendComplaintTcpPatterns,
 			ComplaintUpdateDto,
 			ComplaintUpdateResponse
-		>(ComplaintServerMethods.UpdateComplaint, complaintData)
+		>(SendComplaintTcpPatterns.UpdateComplaint, complaintData)
 	}
 }

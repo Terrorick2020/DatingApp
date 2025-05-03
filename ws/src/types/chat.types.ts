@@ -13,7 +13,7 @@ export enum EWriteType {
 	None = 'None',
 	Write = 'Write',
 }
-
+ 
 export enum ChatsServerMethods {
 	UpdatedChat = 'UpdatedChat',
 	AddChat = 'AddChat',

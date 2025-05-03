@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class BaseWsConnectionDto {
+export class ConnectionDto {
     @IsString()
     roomName!: string
 

@@ -1,37 +1,30 @@
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+import { ConnectionDto } from '@/abstract/dto/connection.dto'
+import { ResConnectionDto } from '~/src/abstract/dto/response.dto'
 
-
-export enum WsConnectionStatus {
-    Error = 'error',
-    Success = 'success',
+export enum ConnectionStatus {
+	Error = 'error',
+	Success = 'success',
 }
 
-export enum WsServerMethothod {
-    JoinRoom = 'joinRoom',
-    LeaveRoom = 'leaveRoom',
+export enum ServerMethods {
+	JoinRoom = 'joinRoom',
+	LeaveRoom = 'leaveRoom',
 }
 
-export enum WsClientMethods {
-    Connect = 'connection'
-}
-
-export interface ResServerConnection {
-    roomName: string
-    telegramId: string
-    status: WsConnectionStatus
-}
-
-export interface ResErrData {
-    message: string
-    status: WsConnectionStatus
+export enum ClientMethods {
+	Connection = 'connection',
 }
 
 export interface ClientToServerEvents {
-    [WsServerMethothod.JoinRoom]: (connection: BaseWsConnectionDto) => Promise<void>
-    [WsServerMethothod.LeaveRoom]: (connection: BaseWsConnectionDto) => Promise<void>
+	[ServerMethods.JoinRoom]: (connection: ConnectionDto) => Promise<void>
+	[ServerMethods.LeaveRoom]: (connection: ConnectionDto) => Promise<void>
 }
 
 export interface ServerToClientEvents {
-    [WsClientMethods.Connect]: (connection: ResServerConnection | ResErrData) => Promise<void>
-    [WsClientMethods.Connect]: (connection: ResServerConnection | ResErrData) => Promise<void>
+	[ClientMethods.Connection]: (
+		connection: ResConnectionDto
+	) => Promise<void>
+	[ClientMethods.Connection]: (
+		connection: ResConnectionDto
+	) => Promise<void>
 }

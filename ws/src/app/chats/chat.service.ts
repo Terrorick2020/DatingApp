@@ -6,79 +6,17 @@ import { RedisService } from '../redis/redis.service'
 import { UpdateChatDto } from './dto/update-chat.dto'
 import { AddChatDto } from './dto/add-chat.dto'
 import { ChatsServerMethods } from '@/types/chat.types'
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto'
-import {
-	ResServerConnection,
-	ResErrData,
-	WsConnectionStatus,
-} from '@/types/base.types'
+import { ConnectionDto } from '@/abstract/dto/connection.dto'
+import { ResConnectionDto } from '@/abstract/dto/response.dto'
 
 @Injectable()
 export class ChatService extends BaseWsService {
 	constructor(
-		private readonly configService: ConfigService,
+		configService: ConfigService,
 		private readonly redisService: RedisService
 	) {
-		const host = configService.get<string>('API_HOST')
-		const port = configService.get<number>('CHATS_PORT')
-
-		super(host || 'localhost', port || 3001)
-
-		// После вызова super() можно безопасно присваивать this
-		this.configService = configService
-	}
-
-	// Расширенный метод joinRoom
-	async joinRoom(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		try {
-			// Обновляем статус пользователя в Redis
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:status`,
-				'online',
-				3600
-			)
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:room`,
-				connectionDto.roomName,
-				3600
-			)
-
-			// Вызываем базовый метод для присоединения к комнате
-			return await super.joinRoom(connectionDto)
-		} catch (error) {
-			console.error('Error in joinRoom:', error)
-			return {
-				message: 'Error joining room',
-				status: WsConnectionStatus.Error,
-			}
-		}
-	}
-
-	// Расширенный метод leaveRoom
-	async leaveRoom(
-		connectionDto: BaseWsConnectionDto
-	): Promise<ResServerConnection | ResErrData> {
-		try {
-			// Обновляем статус пользователя в Redis
-			await this.redisService.set(
-				`user:${connectionDto.telegramId}:status`,
-				'offline',
-				3600
-			)
-			await this.redisService.del(`user:${connectionDto.telegramId}:room`)
-
-			// Вызываем базовый метод для выхода из комнаты
-			return await super.leaveRoom(connectionDto)
-		} catch (error) {
-			console.error('Error in leaveRoom:', error)
-			return {
-				message: 'Error leaving room',
-				status: WsConnectionStatus.Error,
-			}
-		}
-	}
+		super(configService)
+}
 
 	// Метод для отправки запроса на обновление чата
 	async updateChat(updateDto: UpdateChatDto): Promise<any> {
@@ -87,7 +25,7 @@ export class ChatService extends BaseWsService {
 			updateDto
 		)
 	}
-
+ 
 	// Метод для отправки запроса на создание чата
 	async addChat(addChatDto: AddChatDto): Promise<any> {
 		return this.sendRequest<ChatsServerMethods, AddChatDto, any>(

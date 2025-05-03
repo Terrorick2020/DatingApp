@@ -11,22 +11,17 @@ import { MsgsSendMsgDto } from '@/app/messages/dto/send-msg.dto'
 import { MsgsUpdateMsgDto } from '@/app/messages/dto/update-msg.dto'
 import { BaseWsService } from '@/abstract/abstract.service'
 import { ConfigService } from '@nestjs/config'
-import { type ResErrData, WsConnectionStatus } from '@/types/base.types'
+import { ResConnectionDto } from '~/src/abstract/dto/response.dto'
 
 @Injectable()
 export class MessagesService extends BaseWsService {
-	constructor(private readonly configService: ConfigService) {
-		const host = configService.get<string>('API_HOST')
-		const port = configService.get<number>('MSGS_PORT')
-
-		super(host || 'localhost', port || 3002)
-        // Важно после super вызывать инициализацию
-		this.configService = configService
+	constructor(protected readonly configService: ConfigService) {
+		super(configService)
 	}
 
 	async updateInterlocutor(
 		msgsUpdateIntrlocDto: MsgsUpdateIntrlocDto
-	): Promise<ResMsgsUpdateIntrloc | ResErrData> {
+	): Promise<ResMsgsUpdateIntrloc | ResConnectionDto> {
 		return await this.sendRequest<
 			MsgsServerMethods,
 			MsgsUpdateIntrlocDto,
@@ -36,7 +31,7 @@ export class MessagesService extends BaseWsService {
 
 	async updateMsg(
 		msgsSendMsgDto: MsgsSendMsgDto
-	): Promise<ResMsgsUpdateMsg | ResErrData> {
+	): Promise<ResMsgsUpdateMsg | ResConnectionDto> {
 		return await this.sendRequest<
 			MsgsServerMethods,
 			MsgsSendMsgDto,
@@ -46,7 +41,7 @@ export class MessagesService extends BaseWsService {
 
 	async sendMsg(
 		msgsUpdateMsgDto: MsgsUpdateMsgDto
-	): Promise<ResMsgsSendMsg | ResErrData> {
+	): Promise<ResMsgsSendMsg | ResConnectionDto> {
 		return await this.sendRequest<
 			MsgsServerMethods,
 			MsgsUpdateMsgDto,

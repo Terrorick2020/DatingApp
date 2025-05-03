@@ -1,61 +1,57 @@
 import {
-    ConnectedSocket,
-    MessageBody,
-    SubscribeMessage,
-    WebSocketServer,
-} from '@nestjs/websockets';
+	ConnectedSocket,
+	MessageBody,
+	SubscribeMessage,
+	WebSocketServer,
+} from '@nestjs/websockets'
 
 import {
-    WsConnectionStatus,
-    WsClientMethods,
-    WsServerMethothod,
-    type ClientToServerEvents,
-    type ServerToClientEvents,
-    type ResServerConnection,
-    type ResErrData,
-} from '@/types/base.types';
+	ConnectionStatus,
+	ClientMethods,
+	ServerMethods,
+	type ClientToServerEvents,
+	type ServerToClientEvents,
+} from '@/types/base.types'
 
-import { Server, Socket } from 'socket.io';
-import { BaseWsConnectionDto } from './dto/connection.dto';
-
+import { Server, Socket } from 'socket.io'
+import { ConnectionDto } from './dto/connection.dto'
+import { ResConnectionDto } from './dto/response.dto'
+import { BaseWsService } from './abstract.service'
 
 export abstract class BaseWsGateway<
-    TClientToServerEvents extends ClientToServerEvents,
-    TServerToClientEvents extends ServerToClientEvents
+    TService extends BaseWsService,
+	TClientToServerEvents extends ClientToServerEvents,
+	TServerToClientEvents extends ServerToClientEvents,
 > {
-    @WebSocketServer()
-    protected server: Server<TClientToServerEvents, TServerToClientEvents>;
+    constructor(private readonly service: TService) {}
 
-    protected abstract joinRoomService(
-        connectionDto: BaseWsConnectionDto,
-    ): Promise<ResServerConnection | ResErrData>;
+	@WebSocketServer()
+	protected server: Server<TClientToServerEvents, TServerToClientEvents>
+    
+	@SubscribeMessage(ServerMethods.JoinRoom)
+	async handleJoinRoom(
+		@MessageBody() connectionDto: ConnectionDto,
+		@ConnectedSocket() client: Socket
+	): Promise<void> {
+		const resJoinRoom: ResConnectionDto =
+			await this.service.joinRoom(connectionDto)
 
-    protected abstract leaveRoomService(
-        connectionDto: BaseWsConnectionDto,
-    ): Promise<ResServerConnection | ResErrData>;
+		if (resJoinRoom.status === ConnectionStatus.Success) {
+			client.join(connectionDto.roomName)
+		}
 
-    @SubscribeMessage(WsServerMethothod.JoinRoom)
-    async handleJoinRoom(
-        @MessageBody() connectionDto: BaseWsConnectionDto,
-        @ConnectedSocket() client: Socket,
-    ): Promise<void> {
-        const resJoinRoom: ResServerConnection | ResErrData = await this.joinRoomService(connectionDto);
+		client.emit(ClientMethods.Connection, resJoinRoom)
+	}
 
-        if (resJoinRoom.status === WsConnectionStatus.Success) {
-            client.join(connectionDto.roomName);
-        }
+	@SubscribeMessage(ServerMethods.LeaveRoom)
+	async handleLeaveRoom(
+		@MessageBody() connectionDto: ConnectionDto,
+		@ConnectedSocket() client: Socket
+	): Promise<void> {
+		const resLeaveRoom: ResConnectionDto =
+			await this.service.leaveRoom(connectionDto)
 
-        client.emit(WsClientMethods.Connect, resJoinRoom);
-    }
-
-    @SubscribeMessage(WsServerMethothod.LeaveRoom)
-    async handleLeaveRoom(
-        @MessageBody() connectionDto: BaseWsConnectionDto,
-        @ConnectedSocket() client: Socket,
-    ): Promise<void> {
-        const resLeaveRoom: ResServerConnection | ResErrData = await this.leaveRoomService(connectionDto);
-
-        client.leave(connectionDto.roomName);
-        client.emit(WsClientMethods.Connect, resLeaveRoom);
-    }
+		client.leave(connectionDto.roomName)
+		client.emit(ClientMethods.Connection, resLeaveRoom)
+	}
 }
