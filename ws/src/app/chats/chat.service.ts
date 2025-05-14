@@ -1,4 +1,3 @@
-// ws/src/app/chats/chat.service.ts
 import { Injectable } from '@nestjs/common'
 import { BaseWsService } from '@/abstract/abstract.service'
 import { ConfigService } from '@nestjs/config'
@@ -8,6 +7,7 @@ import { AddChatDto } from './dto/add-chat.dto'
 import { ChatsServerMethods } from '@/types/chat.types'
 import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { ResConnectionDto } from '@/abstract/dto/response.dto'
+import { Logger } from '@nestjs/common'
 
 @Injectable()
 export class ChatService extends BaseWsService {
@@ -16,166 +16,530 @@ export class ChatService extends BaseWsService {
 		private readonly redisService: RedisService
 	) {
 		super(configService)
-}
+	}
 
 	// Метод для отправки запроса на обновление чата
 	async updateChat(updateDto: UpdateChatDto): Promise<any> {
-		return this.sendRequest<ChatsServerMethods, UpdateChatDto, any>(
-			ChatsServerMethods.UpdatedChat,
-			updateDto
-		)
+		try {
+			// Проверяем, существует ли чат
+			const chatKey = `chat:${updateDto.chatId}`
+			const chatData = await this.redisService.redis.get(chatKey)
+
+			if (!chatData) {
+				return {
+					message: 'Чат не найден',
+					status: 'error',
+				}
+			}
+
+			// Парсим данные чата
+			const chat = JSON.parse(chatData)
+
+			// Обновляем данные чата
+			let updated = false
+
+			if (updateDto.newLastMsgId) {
+				chat.last_message_id = updateDto.newLastMsgId
+				updated = true
+			}
+
+			if (updateDto.newWriteStat) {
+				// Обновляем статус набора текста в Redis
+				const typingKey = `chat:${updateDto.chatId}:typing`
+
+				if (updateDto.newWriteStat === 'Write') {
+					// Добавляем пользователя в список печатающих
+					await this.redisService.redis.sadd(typingKey, updateDto.telegramId)
+					// Устанавливаем TTL для автоматического удаления через 10 секунд
+					await this.redisService.redis.expire(typingKey, 10)
+				} else {
+					// Удаляем пользователя из списка печатающих
+					await this.redisService.redis.srem(typingKey, updateDto.telegramId)
+				}
+			}
+
+			if (updated) {
+				// Сохраняем обновленные данные
+				await this.redisService.redis.set(
+					chatKey,
+					JSON.stringify(chat),
+					'EX',
+					86400
+				)
+			}
+
+			// Если у нас есть обновление счетчика непрочитанных сообщений
+			if (updateDto.newUnreadCount !== undefined) {
+				// Обновляем счетчик непрочитанных сообщений
+				await this.redisService.redis.hset(
+					`chat:${updateDto.chatId}`,
+					'unreadCount',
+					updateDto.newUnreadCount.toString()
+				)
+			}
+
+			// Отправляем запрос в API через TCP (асинхронно)
+			this.sendRequest(ChatsServerMethods.UpdatedChat, updateDto).catch(err =>
+				this.logger.error(
+					`Error notifying API about chat update: ${err.message}`
+				)
+			)
+
+			return updateDto
+		} catch (error) {
+			this.logger.error(`Error updating chat: ${error.message}`, error.stack)
+			return {
+				message: `Ошибка при обновлении чата: ${error.message}`,
+				status: 'error',
+			}
+		}
 	}
- 
+
 	// Метод для отправки запроса на создание чата
 	async addChat(addChatDto: AddChatDto): Promise<any> {
-		return this.sendRequest<ChatsServerMethods, AddChatDto, any>(
-			ChatsServerMethods.AddChat,
-			addChatDto
-		)
+		try {
+			// Проверяем, не существует ли уже чат
+			const chatKey = `chat:${addChatDto.chatId}`
+			const existingChat = await this.redisService.redis.exists(chatKey)
+
+			if (existingChat) {
+				// Если чат уже существует, просто возвращаем данные
+				return addChatDto
+			}
+
+			// Создаем новый чат
+			const timestamp = addChatDto.created_at || Date.now()
+
+			// Метаданные чата
+			const chat = {
+				id: addChatDto.chatId,
+				participants: [addChatDto.telegramId, addChatDto.toUser.id],
+				created_at: timestamp,
+				last_message_id: null,
+				typing: [],
+			}
+
+			// Статус прочтения
+			const readStatus = {
+				[addChatDto.telegramId]: null,
+				[addChatDto.toUser.id]: null,
+			}
+
+			// Транзакционно сохраняем данные
+			const pipeline = this.redisService.redis.pipeline()
+
+			// Сохраняем метаданные чата
+			pipeline.set(chatKey, JSON.stringify(chat), 'EX', 86400)
+
+			// Сохраняем статус прочтения
+			pipeline.set(
+				`chat:${addChatDto.chatId}:read_status`,
+				JSON.stringify(readStatus),
+				'EX',
+				86400
+			)
+
+			// Сохраняем чат в списке чатов пользователя
+			const user1ChatsKey = `user:${addChatDto.telegramId}:chats`
+			const user2ChatsKey = `user:${addChatDto.toUser.id}:chats`
+
+			// Получаем текущие списки чатов
+			const [user1Chats, user2Chats] = await Promise.all([
+				this.redisService.redis.get(user1ChatsKey),
+				this.redisService.redis.get(user2ChatsKey),
+			])
+
+			// Обновляем списки чатов
+			const user1ChatsList = user1Chats ? JSON.parse(user1Chats) : []
+			const user2ChatsList = user2Chats ? JSON.parse(user2Chats) : []
+
+			if (!user1ChatsList.includes(addChatDto.chatId)) {
+				user1ChatsList.push(addChatDto.chatId)
+				pipeline.set(user1ChatsKey, JSON.stringify(user1ChatsList), 'EX', 86400)
+			}
+
+			if (!user2ChatsList.includes(addChatDto.chatId)) {
+				user2ChatsList.push(addChatDto.chatId)
+				pipeline.set(user2ChatsKey, JSON.stringify(user2ChatsList), 'EX', 86400)
+			}
+
+			// Инвалидируем кеш превью
+			pipeline.del(`user:${addChatDto.telegramId}:chats_preview`)
+			pipeline.del(`user:${addChatDto.toUser.id}:chats_preview`)
+
+			// Выполняем транзакцию
+			await pipeline.exec()
+
+			// Отправляем запрос в API через TCP (асинхронно)
+			this.sendRequest(ChatsServerMethods.AddChat, addChatDto).catch(err =>
+				this.logger.error(`Error notifying API about new chat: ${err.message}`)
+			)
+
+			return addChatDto
+		} catch (error) {
+			this.logger.error(`Error adding chat: ${error.message}`, error.stack)
+			return {
+				message: `Ошибка при создании чата: ${error.message}`,
+				status: 'error',
+			}
+		}
 	}
 
 	// Получение списка чатов пользователя из Redis
 	async getUserChats(userId: string): Promise<any[]> {
 		try {
-			const chatIds = await this.redisService.getList(`user:${userId}:chats`)
+			// Проверяем кеш превью
+			const previewKey = `user:${userId}:chats_preview`
+			const cachedPreviews = await this.redisService.redis.get(previewKey)
 
-			if (!chatIds.length) {
-				// Если в Redis нет данных, запрашиваем из API
-				return await this.getUserChatsFromApi(userId)
+			if (cachedPreviews) {
+				return JSON.parse(cachedPreviews)
 			}
 
-			const chats: any[] = []
+			// Получаем список ID чатов пользователя
+			const userChatsKey = `user:${userId}:chats`
+			const userChats = await this.redisService.redis.get(userChatsKey)
+
+			if (!userChats) {
+				return []
+			}
+
+			const chatIds = JSON.parse(userChats)
+
+			if (!Array.isArray(chatIds) || chatIds.length === 0) {
+				return []
+			}
+
+			// Собираем данные о чатах
+			const chatPreviews = []
+
 			for (const chatId of chatIds) {
-				const chat: any = await this.getChatDetails(chatId)
-				if (chat) chats.push(chat)
-			}
+				const chatKey = `chat:${chatId}`
+				const chatData = await this.redisService.redis.get(chatKey)
 
-			return chats
-		} catch (error) {
-			console.error('Error getting user chats:', error)
-			return []
-		}
-	}
+				if (chatData) {
+					try {
+						const chat = JSON.parse(chatData)
 
-	// Получение списка чатов из API
-	private async getUserChatsFromApi(userId: string): Promise<any[]> {
-		try {
-			// Используем специальный метод для получения чатов (должен быть реализован на API)
-			const result = await this.sendRequest<any, { userId: string }, any[]>(
-				'getUserChats' as any,
-				{ userId }
-			)
+						// Находим собеседника
+						const partnerId = chat.participants?.find(id => id !== userId)
 
-			// Кешируем полученные данные
-			if (Array.isArray(result)) {
-				for (const chat of result) {
-					if (chat && chat.id) {
-						await this.cacheChatData(chat)
-						await this.redisService.addToList(`user:${userId}:chats`, chat.id)
+						if (partnerId) {
+							// Получаем данные о пользователе из Redis (если есть кеш)
+							const userDataKey = `user:${partnerId}:profile`
+							const userData = await this.redisService.redis.get(userDataKey)
+
+							let interlocutor = {
+								id: partnerId,
+								avatar: '',
+								name: 'Unknown',
+							}
+
+							if (userData) {
+								try {
+									const userProfile = JSON.parse(userData)
+									interlocutor = {
+										id: partnerId,
+										avatar: userProfile.avatar || '',
+										name: userProfile.name || 'Unknown',
+									}
+								} catch (e) {
+									this.logger.error(`Error parsing user profile: ${e.message}`)
+								}
+							}
+
+							// Получаем данные о последнем сообщении
+							let lastMessage = ''
+							if (chat.last_message_id) {
+								const msgKey = `chat:${chatId}:messages`
+								const msgData = await this.redisService.redis.hget(
+									msgKey,
+									chat.last_message_id
+								)
+
+								if (msgData) {
+									try {
+										const message = JSON.parse(msgData)
+										lastMessage = message.text || ''
+									} catch (e) {
+										this.logger.error(`Error parsing message: ${e.message}`)
+									}
+								}
+							}
+
+							// Получаем количество непрочитанных сообщений
+							let unreadCount = 0
+							const unreadCountData = await this.redisService.redis.hget(
+								`chat:${chatId}`,
+								'unreadCount'
+							)
+							if (unreadCountData) {
+								unreadCount = parseInt(unreadCountData) || 0
+							}
+
+							// Добавляем превью чата
+							chatPreviews.push({
+								chatId,
+								toUser: interlocutor,
+								lastMsg: lastMessage,
+								created_at: chat.created_at || 0,
+								unread_count: unreadCount,
+							})
+						}
+					} catch (e) {
+						this.logger.error(`Error processing chat ${chatId}: ${e.message}`)
 					}
 				}
-				return result
 			}
 
-			return []
+			// Сортируем по времени создания (от новых к старым)
+			chatPreviews.sort((a, b) => b.created_at - a.created_at)
+
+			// Кешируем результат на 15 минут
+			await this.redisService.redis.set(
+				previewKey,
+				JSON.stringify(chatPreviews),
+				'EX',
+				900
+			)
+			return chatPreviews
 		} catch (error) {
-			console.error('Error fetching user chats from API:', error)
+			this.logger.error(
+				`Error getting user chats: ${error.message}`,
+				error.stack
+			)
 			return []
 		}
 	}
 
-	// Получение информации о чате
+	// Получение данных о чате
 	async getChatDetails(chatId: string): Promise<any | null> {
 		try {
-			// Сначала пробуем получить из Redis
-			const cachedData = await this.redisService.hgetall(`chat:${chatId}`)
+			// Получаем метаданные чата
+			const chatKey = `chat:${chatId}`
+			const chatData = await this.redisService.redis.get(chatKey)
 
-			if (cachedData && Object.keys(cachedData).length > 0) {
-				return {
-					id: chatId,
-					...cachedData,
-					unreadCount: parseInt(cachedData.unreadCount || '0'),
-					createdAt: parseInt(cachedData.createdAt || '0'),
+			if (!chatData) {
+				return null
+			}
+
+			// Парсим данные чата
+			const chat = JSON.parse(chatData)
+
+			// Получаем статус прочтения
+			const readStatusKey = `chat:${chatId}:read_status`
+			const readStatusData = await this.redisService.redis.get(readStatusKey)
+			let readStatus = {}
+
+			if (readStatusData) {
+				try {
+					readStatus = JSON.parse(readStatusData)
+				} catch (e) {
+					this.logger.error(`Error parsing read status: ${e.message}`)
 				}
 			}
 
-			// Если в Redis нет данных, запрашиваем из API
-			const result = await this.sendRequest<any, { chatId: string }, any>(
-				'getChatDetails' as any,
-				{ chatId }
-			)
+			// Получаем последнее сообщение (если есть)
+			let lastMessage = null
+			if (chat.last_message_id) {
+				const messagesKey = `chat:${chatId}:messages`
+				const messageData = await this.redisService.redis.hget(
+					messagesKey,
+					chat.last_message_id
+				)
 
-			// Кешируем полученные данные
-			if (result && typeof result === 'object' && !result.message) {
-				await this.cacheChatData(result)
-				return result
+				if (messageData) {
+					try {
+						lastMessage = JSON.parse(messageData)
+					} catch (e) {
+						this.logger.error(`Error parsing last message: ${e.message}`)
+					}
+				}
 			}
 
-			return null
+			// Формируем полные данные о чате
+			return {
+				id: chatId,
+				metadata: chat,
+				readStatus,
+				lastMessage,
+			}
 		} catch (error) {
-			console.error('Error fetching chat details:', error)
+			this.logger.error(
+				`Error getting chat details: ${error.message}`,
+				error.stack
+			)
 			return null
 		}
 	}
 
-	// Вспомогательный метод для кеширования данных чата
-	private async cacheChatData(chat: Record<string, any>): Promise<void> {
-		if (!chat || !chat.id) return
-
+	/**
+	 * Обработка подключения к комнате
+	 */
+	async joinRoom(connectionDto: ConnectionDto): Promise<ResConnectionDto> {
 		try {
-			const chatData = {
-				lastMsgId: chat.lastMsgId || '',
-				lastMsgText: chat.lastMsgText || '',
-				unreadCount: (chat.unreadCount || 0).toString(),
-				createdAt: (chat.createdAt || Date.now()).toString(),
-				updatedAt: (chat.updatedAt || Date.now()).toString(),
+			// Получаем статус пользователя и обновляем его
+			const userStatusKey = `user:${connectionDto.telegramId}:status`
+			await this.redisService.redis.set(userStatusKey, 'online', 'EX', 3600)
+
+			// Сохраняем комнату пользователя
+			const userRoomKey = `user:${connectionDto.telegramId}:room`
+			await this.redisService.redis.set(
+				userRoomKey,
+				connectionDto.roomName,
+				'EX',
+				3600
+			)
+
+			// Получаем чаты пользователя
+			const userChatsKey = `user:${connectionDto.telegramId}:chats`
+			const userChats = await this.redisService.redis.get(userChatsKey)
+
+			if (userChats) {
+				const chatIds = JSON.parse(userChats)
+				const notifyUsers = new Set<string>()
+
+				// Находим всех пользователей, которым нужно отправить обновление
+				for (const chatId of chatIds) {
+					const chatKey = `chat:${chatId}`
+					const chatData = await this.redisService.redis.get(chatKey)
+
+					if (chatData) {
+						try {
+							const chat = JSON.parse(chatData)
+
+							if (chat.participants && Array.isArray(chat.participants)) {
+								// Добавляем собеседников в список для оповещения
+								for (const participant of chat.participants) {
+									if (participant !== connectionDto.telegramId) {
+										notifyUsers.add(participant)
+									}
+								}
+							}
+						} catch (error) {
+							this.logger.error(`Error parsing chat data: ${error.message}`)
+						}
+					}
+				}
+
+				// Публикуем событие в Redis для всех инстансов
+				if (notifyUsers.size > 0) {
+					this.redisService.redis.publish(
+						'user:status',
+						JSON.stringify({
+							userId: connectionDto.telegramId,
+							status: 'online',
+							notifyUsers: Array.from(notifyUsers),
+							timestamp: Date.now(),
+						})
+					)
+				}
 			}
 
-			// Используем хеши для хранения данных чата
-			await this.redisService.hset(
-				`chat:${chat.id}`,
-				'lastMsgId',
-				chatData.lastMsgId
-			)
-			await this.redisService.hset(
-				`chat:${chat.id}`,
-				'lastMsgText',
-				chatData.lastMsgText
-			)
-			await this.redisService.hset(
-				`chat:${chat.id}`,
-				'unreadCount',
-				chatData.unreadCount
-			)
-			await this.redisService.hset(
-				`chat:${chat.id}`,
-				'createdAt',
-				chatData.createdAt
-			)
-			await this.redisService.hset(
-				`chat:${chat.id}`,
-				'updatedAt',
-				chatData.updatedAt
-			)
+			return {
+				roomName: connectionDto.roomName,
+				telegramId: connectionDto.telegramId,
+				status: ConnectionStatus.Success,
+			}
+		} catch (error) {
+			this.logger.error(`Error joining room: ${error.message}`, error.stack)
+			return {
+				roomName: connectionDto.roomName,
+				telegramId: connectionDto.telegramId,
+				message: `Ошибка при подключении к комнате: ${error.message}`,
+				status: ConnectionStatus.Error,
+			}
+		}
+	}
 
-			// Устанавливаем срок жизни ключа
-			await this.redisService.expire(`chat:${chat.id}`, 3600)
+	/**
+	 * Обработка отключения от комнаты
+	 */
+	async leaveRoom(connectionDto: ConnectionDto): Promise<ResConnectionDto> {
+		try {
+			// Если пользователь покидает свою личную комнату, обновляем статус на оффлайн
+			if (connectionDto.roomName === connectionDto.telegramId) {
+				await this.updateUserOfflineStatus(connectionDto.telegramId)
+			}
 
-			// Если есть информация о пользователях, кешируем и ее
-			if (chat.users && Array.isArray(chat.users)) {
-				await this.redisService.set(
-					`chat:${chat.id}:users`,
-					JSON.stringify(chat.users),
-					3600
-				)
+			return {
+				roomName: connectionDto.roomName,
+				telegramId: connectionDto.telegramId,
+				status: ConnectionStatus.Success,
+			}
+		} catch (error) {
+			this.logger.error(`Error leaving room: ${error.message}`, error.stack)
+			return {
+				roomName: connectionDto.roomName,
+				telegramId: connectionDto.telegramId,
+				message: `Ошибка при отключении от комнаты: ${error.message}`,
+				status: ConnectionStatus.Error,
+			}
+		}
+	}
 
-				// Добавляем этот чат в список чатов каждого пользователя
-				for (const userId of chat.users) {
-					await this.redisService.addToList(`user:${userId}:chats`, chat.id)
+	/**
+	 * Обновление статуса пользователя на оффлайн
+	 */
+	async updateUserOfflineStatus(userId: string): Promise<void> {
+		try {
+			// Обновляем статус в Redis
+			const userStatusKey = `user:${userId}:status`
+			await this.redisService.redis.set(userStatusKey, 'offline', 'EX', 86400)
+
+			// Удаляем привязку к комнате
+			const userRoomKey = `user:${userId}:room`
+			await this.redisService.redis.del(userRoomKey)
+
+			// Получаем чаты пользователя
+			const userChatsKey = `user:${userId}:chats`
+			const userChats = await this.redisService.redis.get(userChatsKey)
+
+			if (userChats) {
+				const chatIds = JSON.parse(userChats)
+				const notifyUsers = new Set<string>()
+
+				// Находим всех пользователей, которым нужно отправить обновление
+				for (const chatId of chatIds) {
+					const chatKey = `chat:${chatId}`
+					const chatData = await this.redisService.redis.get(chatKey)
+
+					if (chatData) {
+						try {
+							const chat = JSON.parse(chatData)
+
+							if (chat.participants && Array.isArray(chat.participants)) {
+								// Добавляем собеседников в список для оповещения
+								for (const participant of chat.participants) {
+									if (participant !== userId) {
+										notifyUsers.add(participant)
+									}
+								}
+							}
+						} catch (error) {
+							this.logger.error(`Error parsing chat data: ${error.message}`)
+						}
+					}
+				}
+
+				// Публикуем событие в Redis для всех инстансов
+				if (notifyUsers.size > 0) {
+					this.redisService.redis.publish(
+						'user:status',
+						JSON.stringify({
+							userId,
+							status: 'offline',
+							notifyUsers: Array.from(notifyUsers),
+							timestamp: Date.now(),
+						})
+					)
 				}
 			}
 		} catch (error) {
-			console.error('Error caching chat data:', error)
+			this.logger.error(
+				`Error updating user offline status: ${error.message}`,
+				error.stack
+			)
 		}
 	}
 }

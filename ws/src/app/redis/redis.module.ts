@@ -1,10 +1,41 @@
-import { Module } from '@nestjs/common'
+import { Module, Global } from '@nestjs/common'
+import Redis from 'ioredis'
+import { ConfigService, ConfigModule } from '@nestjs/config'
 import { RedisService } from './redis.service'
-import { ConfigModule } from '@nestjs/config'
+import { AppLogger } from '../../common/logger/logger.service'
 
+@Global()
 @Module({
 	imports: [ConfigModule],
-	providers: [RedisService],
-	exports: [RedisService],
+	providers: [
+		{
+			provide: 'REDIS_CLIENT',
+			useFactory: (configService: ConfigService) => {
+				const host = configService.get('REDIS_HOST', 'localhost')
+				const port = parseInt(configService.get('REDIS_PORT', '6379'))
+				const password = configService.get('REDIS_PASSWORD', '')
+				const db = parseInt(configService.get('REDIS_DB', '0'))
+
+				const options = {
+					host,
+					port,
+					password,
+					db,
+					retryStrategy(times: number) {
+						const delay = Math.min(times * 100, 2000)
+						return delay
+					},
+					enableReadyCheck: true,
+					maxRetriesPerRequest: 3,
+				}
+
+				return new Redis(options)
+			},
+			inject: [ConfigService],
+		},
+		RedisService,
+		AppLogger,
+	],
+	exports: ['REDIS_CLIENT', RedisService],
 })
 export class RedisModule {}
