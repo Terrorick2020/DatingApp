@@ -114,7 +114,14 @@ export class MonitoringService implements OnModuleInit {
 			}
 
 			// Логируем метрики
-			this.logger.logMetrics(metrics)
+			this.logger.logMetrics({
+				'connections.total': metrics.connections.total,
+				'users.total': metrics.users.total,
+				'rooms.total': metrics.rooms.total,
+				'memory.usedPercent': systemMetrics.memory.usedPercent,
+				'cpu.load': systemMetrics.cpu[0],
+				'uptime': systemMetrics.uptime
+			  });
 
 			// Публикуем метрики в Redis для агрегации
 			await this.redisService.redis.publish(

@@ -65,7 +65,7 @@ export class AppLogger implements LoggerService {
 		)
 
 		// Транспорты для логов
-		const logTransports = [
+		const logTransports: any[] = [
 			// Консольный транспорт
 			new transports.Console({
 				level: process.env.LOG_LEVEL || 'debug',
