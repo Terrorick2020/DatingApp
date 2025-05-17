@@ -16,6 +16,7 @@ import { MatchService } from './match.service'
 import { MemoryCacheService } from '../memory-cache.service'
 import { Injectable } from '@nestjs/common'
 import { RedisService } from '../redis/redis.service'
+import { GetUserMatchesDto, MatchesResponseDto } from './dto/match.dto'
 
 @WebSocketGateway({
 	namespace: 'matches',
@@ -99,33 +100,47 @@ export class MatchGateway extends BaseWsGateway<
 		}
 	}
 
+	// Type guard функция для проверки типа ответа
+	isMatchesResponse(obj: any): obj is MatchesResponseDto {
+		return obj && Array.isArray(obj.matches) && typeof obj.count === 'number'
+	}
+
 	/**
 	 * Обработчик запроса на получение всех матчей пользователя
 	 */
 	@SubscribeMessage('getUserMatches')
 	async handleGetUserMatches(
-		@MessageBody() data: { userId: string }
+		@MessageBody() data: GetUserMatchesDto
 	): Promise<void> {
 		try {
-			this.logger.debug(`Получение матчей пользователя ${data.userId}`)
+			this.logger.debug(`Получение матчей пользователя ${data.telegramId}`)
 
 			// Проверяем кэш
-			const cacheKey = `user:${data.userId}:matches`
+			const cacheKey = `user:${data.telegramId}:matches`
 			const cachedMatches = this.cacheService.get(cacheKey)
 
 			if (cachedMatches) {
 				// Если данные в кэше, отправляем их
-				this.sendToUser(data.userId, 'userMatches', cachedMatches)
+				this.sendToUser(data.telegramId, 'userMatches', cachedMatches)
 			} else {
 				// Если нет в кэше, запрашиваем через API
-				const matches = await this.matchService.getUserMatches(data.userId)
+				const result = await this.matchService.getUserMatches(data.telegramId)
 
-				// Отправляем результат
-				this.sendToUser(data.userId, 'userMatches', matches)
+				// Проверяем тип результата с использованием type guard
+				if (this.isMatchesResponse(result)) {
+					// Результат типа MatchesResponseDto
+					this.sendToUser(data.telegramId, 'userMatches', result)
 
-				// Кэшируем результат на 2 минуты
-				if (matches && Array.isArray(matches)) {
-					this.cacheService.set(cacheKey, matches, 120)
+					// Кэшируем результат на 2 минуты
+					if (result.matches && result.matches.length > 0) {
+						this.cacheService.set(cacheKey, result, 120)
+					}
+				} else {
+					// Результат типа MatchServiceResponseDto (ошибка)
+					this.sendToUser(data.telegramId, 'matchesError', {
+						message: result.message || 'Ошибка при получении матчей',
+						status: result.status || 'error',
+					})
 				}
 			}
 		} catch (error) {
@@ -133,12 +148,14 @@ export class MatchGateway extends BaseWsGateway<
 				`Ошибка при получении матчей: ${error.message}`,
 				error.stack
 			)
-			this.sendToUser(data.userId, 'matchesError', {
+			this.sendToUser(data.telegramId, 'matchesError', {
 				message: 'Ошибка при получении матчей',
 				status: 'error',
 			})
 		}
 	}
+
+	
 
 	/**
 	 * Обработка запроса на удаление матча
