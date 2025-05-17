@@ -52,9 +52,16 @@ export class MemoryCacheService implements OnModuleInit {
 
 	/**
 	 * Установка значения в кеш
+	 * @param key Ключ
+	 * @param value Значение
+	 * @param ttl Время жизни в секундах (опционально)
 	 */
 	set<T>(key: string, value: T, ttl?: number): boolean {
-		return this.cache.set(key, value, ttl)
+		// Исправляем проблему с undefined ttl с помощью явной проверки
+		if (ttl !== undefined) {
+			return this.cache.set(key, value, ttl)
+		}
+		return this.cache.set(key, value)
 	}
 
 	/**
@@ -105,8 +112,8 @@ export class MemoryCacheService implements OnModuleInit {
 	private pruneOldestEntries(count: number): void {
 		const keys = this.cache.keys()
 		const keysInfo = keys.map(key => {
-			const stats = this.cache.getTtl(key)
-			return { key, ttl: stats }
+			const ttl = this.cache.getTtl(key)
+			return { key, ttl: ttl || Infinity } // Если ttl undefined, используем Infinity
 		})
 
 		// Сортируем по TTL (меньше TTL - скорее всего, более старая запись)

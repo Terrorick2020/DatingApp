@@ -1,23 +1,26 @@
 import {
-	WebSocketGateway,
-	SubscribeMessage,
-	MessageBody,
-} from '@nestjs/websockets'
-import {
 	MatchClientMethods,
 	MatchServerMethods,
 	type MatchClientToServerEvents,
 	type MatchServerToClientEvents,
 } from '@/types/match.type'
-import { EventPattern, Payload } from '@nestjs/microservices'
-import { BaseWsGateway } from '~/src/abstract/abstract.gateway'
-import { MatchTriggerDto } from './dto/trigger.dto'
-import { MatchService } from './match.service'
-import { MemoryCacheService } from '../memory-cache.service'
 import { Injectable } from '@nestjs/common'
+import { EventPattern, Payload } from '@nestjs/microservices'
+import {
+	MessageBody,
+	SubscribeMessage,
+	WebSocketGateway,
+} from '@nestjs/websockets'
+import { BaseWsGateway } from '~/src/abstract/abstract.gateway'
+import { MemoryCacheService } from '../cache/memory-cache.service'
 import { RedisService } from '../redis/redis.service'
 import { GetUserMatchesDto } from './dto/match.dto'
-import { MatchesResponse, MatchServiceResponse } from './match.service'
+import { MatchTriggerDto } from './dto/trigger.dto'
+import {
+	MatchesResponse,
+	MatchService,
+	MatchServiceResponse,
+} from './match.service'
 
 @WebSocketGateway({
 	namespace: 'matches',
@@ -105,17 +108,18 @@ export class MatchGateway extends BaseWsGateway<
 	 * Проверка, является ли ответ успешным списком матчей
 	 */
 	private isMatchesResponse(response: any): response is MatchesResponse {
-		return response && 
-			Array.isArray(response.matches) && 
-			typeof response.count === 'number';
+		return (
+			response &&
+			Array.isArray(response.matches) &&
+			typeof response.count === 'number'
+		)
 	}
-	
+
 	/**
 	 * Проверка, является ли ответ ошибкой
 	 */
 	private isErrorResponse(response: any): response is MatchServiceResponse {
-		return response && 
-			(response.status === 'error' || response.message);
+		return response && (response.status === 'error' || response.message)
 	}
 
 	/**

@@ -11,6 +11,19 @@ import {
 
 import { ConnectionDto } from '@/abstract/dto/connection.dto'
 
+// Переместить класс MatchFromUserDto до MatchTriggerDto, чтобы он был объявлен первым
+// DTO для информации о пользователе в триггере матча
+export class MatchFromUserDto {
+	@IsString()
+	id!: string
+
+	@IsString()
+	avatar!: string
+
+	@IsString()
+	name!: string
+}
+
 // DTO для элемента матча
 export class MatchItemDto {
 	@IsString()
@@ -104,18 +117,6 @@ export class MatchTriggerDto extends ConnectionDto {
 
 	@ValidateNested()
 	fromUser!: MatchFromUserDto
-}
-
-// DTO для информации о пользователе в триггере матча
-export class MatchFromUserDto {
-	@IsString()
-	id!: string
-
-	@IsString()
-	avatar!: string
-
-	@IsString()
-	name!: string
 }
 
 // Универсальный DTO для ответов от сервиса

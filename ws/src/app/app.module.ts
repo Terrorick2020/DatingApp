@@ -1,18 +1,19 @@
-import { Module } from '@nestjs/common'
-import { ConfigModule, ConfigService } from '@nestjs/config'
-import { ChatModule } from './chats/chat.module'
-import { MessagesModule } from './messages/messages.module'
-import { MatchModule } from './match/match.module'
-import { ComplaintModule } from './complaint/complaint.module'
-import { RedisModule } from './redis/redis.module'
-import { LikeModule } from './like/like.module'
-import { ScheduleModule } from '@nestjs/schedule'
-import { RedisSubscriberService } from './redis-subscriber.service'
-import { MemoryCacheService } from './memory-cache.service'
-import { MonitoringModule } from './monitoring/monitoring.module'
-import { LoggerModule } from '../common/logger/logger.module'
-import serverConfig from '@/config/server.config'
 import connectionConfig from '@/config/connection.config'
+import serverConfig from '@/config/server.config'
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { ScheduleModule } from '@nestjs/schedule'
+import { LoggerModule } from '../common/logger/logger.module'
+import { MemoryCacheService } from './cache/memory-cache.service'
+import { ChatModule } from './chats/chat.module'
+import { ComplaintModule } from './complaint/complaint.module'
+import { LikeModule } from './like/like.module'
+import { MatchModule } from './match/match.module'
+import { MessagesModule } from './messages/messages.module'
+import { MonitoringModule } from './monitoring/monitoring.module'
+import { RedisSubscriberService } from './redis-subscriber.service'
+import { RedisModule } from './redis/redis.module'
+import { MemoryCacheModule } from './cache/memory-cache.module'
 
 @Module({
 	imports: [
@@ -22,18 +23,18 @@ import connectionConfig from '@/config/connection.config'
 			load: [serverConfig, connectionConfig],
 		}),
 		ScheduleModule.forRoot(), // Для выполнения периодических задач
-		LoggerModule, // Модуль для логирования
-		RedisModule, // Централизованный модуль Redis
-		MonitoringModule, // Добавляем модуль мониторинга
+		LoggerModule,
+		RedisModule,
+		MonitoringModule,
 		ChatModule,
 		MessagesModule,
 		MatchModule,
 		ComplaintModule,
 		LikeModule,
+		MemoryCacheModule,
 	],
 	providers: [
 		RedisSubscriberService, // Сервис для Redis Pub/Sub
-		MemoryCacheService, // Сервис для кеширования в памяти
 	],
 	exports: [MemoryCacheService],
 })

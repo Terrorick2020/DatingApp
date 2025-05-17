@@ -15,6 +15,11 @@ export enum ClientMethods {
 	Connection = 'connection',
 }
 
+
+export interface ResErrData {
+	message: string;
+	status: string;
+  }
 export interface ClientToServerEvents {
 	[ServerMethods.JoinRoom]: (connection: ConnectionDto) => Promise<void>
 	[ServerMethods.LeaveRoom]: (connection: ConnectionDto) => Promise<void>
