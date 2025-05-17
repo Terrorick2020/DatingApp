@@ -2,8 +2,9 @@ import {
 	ClientProxy,
 	ClientProxyFactory,
 	Transport,
+	TcpClientOptions,
 } from '@nestjs/microservices'
-
+import { firstValueFrom } from 'rxjs' // Добавляем импорт firstValueFrom
 import { ServerMethods } from '@/types/base.types'
 import { ConnectionStatus } from '@/types/base.types'
 import { ConfigService } from '@nestjs/config'
@@ -28,6 +29,7 @@ export abstract class BaseWsService {
 			configService.get<string>('API_TCP_PORT', '7755')
 		)
 
+		// Исправление: корректное создание клиента TCP
 		this.clientProxy = ClientProxyFactory.create({
 			transport: Transport.TCP,
 			options: {
@@ -36,7 +38,7 @@ export abstract class BaseWsService {
 				retryAttempts: this.MAX_RETRIES,
 				retryDelay: this.BASE_RETRY_DELAY,
 			},
-		})
+		} as TcpClientOptions)
 
 		this.configService = configService
 
@@ -63,13 +65,21 @@ export abstract class BaseWsService {
 				5000
 			)
 
-			const response = await Promise.race([
-				this.clientProxy.send<TResponse, TRequest>(pattern, data).toPromise(),
-				new Promise<ResConnectionDto>((_, reject) =>
-					setTimeout(() => reject(new Error('API request timeout')), timeout)
-				),
-			])
+			// Исправление: использование firstValueFrom вместо toPromise
+			const responsePromise = firstValueFrom(
+				this.clientProxy.send<TResponse, TRequest>(pattern, data)
+			)
 
+			// Обработка таймаута
+			const timeoutPromise = new Promise<ResConnectionDto>((_, reject) =>
+				setTimeout(() => reject(new Error('API request timeout')), timeout)
+			)
+
+			// Ожидаем первый выполненный Promise
+			const response = (await Promise.race([
+				responsePromise,
+				timeoutPromise,
+			])) as TResponse | ResConnectionDto
 			return response
 		} catch (error) {
 			// Если еще можно повторить запрос и это не таймаут
@@ -78,19 +88,23 @@ export abstract class BaseWsService {
 				const delay = this.BASE_RETRY_DELAY * Math.pow(2, retryCount)
 
 				this.logger.warn(
-					`Retrying API request (${retryCount + 1}/${
+					`Повторная попытка запроса к API (${retryCount + 1}/${
 						this.MAX_RETRIES
-					}) after ${delay}ms delay...`
+					}) после задержки ${delay}мс...`
 				)
 
 				await new Promise(resolve => setTimeout(resolve, delay))
 
 				// Повторяем запрос с увеличенным счетчиком
-				return this.sendRequest(pattern, data, retryCount + 1)
+				return this.sendRequest<TPattern, TRequest, TResponse>(
+					pattern,
+					data,
+					retryCount + 1
+				)
 			}
 
 			this.logger.error(
-				`Failed to send API request after ${this.MAX_RETRIES} retries: ${error.message}`
+				`Не удалось отправить запрос к API после ${this.MAX_RETRIES} попыток: ${error.message}`
 			)
 
 			return {
