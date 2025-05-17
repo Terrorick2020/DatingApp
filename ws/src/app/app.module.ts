@@ -36,6 +36,5 @@ import { MemoryCacheModule } from './cache/memory-cache.module'
 	providers: [
 		RedisSubscriberService, // Сервис для Redis Pub/Sub
 	],
-	exports: [MemoryCacheService],
 })
 export class AppModule {}

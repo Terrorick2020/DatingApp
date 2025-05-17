@@ -3,6 +3,7 @@ import { MessagesGateway } from './messages.gateway';
 import { MessagesService } from './messages.service';
 
 @Module({
-  providers: [MessagesGateway, MessagesService]
+  providers: [MessagesGateway, MessagesService],
+  exports: [MessagesService, MessagesGateway],  
 })
 export class MessagesModule {}

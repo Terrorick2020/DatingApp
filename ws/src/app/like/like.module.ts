@@ -4,5 +4,6 @@ import { LikeService } from './like.service'
 
 @Module({
 	providers: [LikeGateway, LikeService],
+	exports: [LikeService, LikeGateway],
 })
 export class LikeModule {}
