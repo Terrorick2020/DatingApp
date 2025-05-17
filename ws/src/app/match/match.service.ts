@@ -17,7 +17,7 @@ export interface MatchItem {
 	matchUserAvatar?: string
 	createdAt?: number
 	seen?: boolean
-	chatId?: string 
+	chatId?: string
 }
 
 // Интерфейс для ответа со списком матчей
@@ -70,7 +70,9 @@ export class MatchService extends BaseWsService {
 	/**
 	 * Отправка уведомления о матче пользователю
 	 */
-	async sendMatchTrigger(triggerDto: MatchTriggerDto): Promise<any> {
+	async sendMatchTrigger(
+		triggerDto: MatchTriggerDto
+	): Promise<MatchNotificationResponse> {
 		try {
 			this.logger.debug(
 				`Отправка уведомления о матче пользователю ${triggerDto.telegramId} от ${triggerDto.fromUser.id}`,
@@ -95,11 +97,19 @@ export class MatchService extends BaseWsService {
 			}
 
 			// Отправляем уведомление через TCP запрос
-			const response: { message?: string; status?: string } =
-				await this.sendRequest(MatchServerMethods.Trigger, triggerDto)
+			const response = await this.sendRequest(
+				MatchServerMethods.Trigger,
+				triggerDto
+			)
+
+			// Преобразуем ответ к нужному типу
+			const typedResponse: MatchNotificationResponse = {
+				message: (response as any)?.message,
+				status: (response as any)?.status,
+			}
 
 			// Сохраняем информацию об отправке уведомления
-			if (response && (!response.message || response.status !== 'error')) {
+			if (!typedResponse.message || typedResponse.status !== 'error') {
 				await this.redisService.redis.set(
 					notificationKey,
 					'sent',
@@ -142,7 +152,7 @@ export class MatchService extends BaseWsService {
 				)
 			}
 
-			return response
+			return typedResponse
 		} catch (error) {
 			this.logger.error(
 				`Ошибка при отправке уведомления о матче: ${error.message}`,
@@ -161,7 +171,7 @@ export class MatchService extends BaseWsService {
 	async confirmMatchNotification(
 		userId: string,
 		matchUserId: string
-	): Promise<any> {
+	): Promise<MatchServiceResponse> {
 		try {
 			this.logger.debug(
 				`Подтверждение просмотра уведомления о матче пользователем ${userId} с ${matchUserId}`,
@@ -200,7 +210,9 @@ export class MatchService extends BaseWsService {
 	/**
 	 * Получение непросмотренных уведомлений о матчах для пользователя
 	 */
-	async getUnseenMatches(userId: string): Promise<any> {
+	async getUnseenMatches(
+		userId: string
+	): Promise<MatchesResponse | MatchServiceResponse> {
 		try {
 			this.logger.debug(
 				`Получение непросмотренных уведомлений о матчах для пользователя ${userId}`,
@@ -217,16 +229,7 @@ export class MatchService extends BaseWsService {
 				}
 			}
 
-			// Явно определяем тип массива
-			interface MatchData {
-				userId: string
-				matchUserId: string
-				matchUserName: string
-				matchUserAvatar: string
-				createdAt: number
-			}
-
-			const unseenMatches: MatchData[] = []
+			const unseenMatches: MatchItem[] = []
 
 			// Проверяем каждый матч
 			for (const key of matchKeys) {
@@ -244,7 +247,7 @@ export class MatchService extends BaseWsService {
 			}
 
 			// Сортируем по времени создания (новые первыми)
-			unseenMatches.sort((a, b) => b.createdAt - a.createdAt)
+			unseenMatches.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
 
 			return {
 				matches: unseenMatches,
@@ -256,9 +259,10 @@ export class MatchService extends BaseWsService {
 				error.stack
 			)
 			return {
+				message: `Произошла ошибка: ${error.message}`,
+				status: 'error',
 				matches: [],
 				count: 0,
-				error: `Произошла ошибка: ${error.message}`,
 			}
 		}
 	}
@@ -266,7 +270,9 @@ export class MatchService extends BaseWsService {
 	/**
 	 * Получение всех матчей пользователя
 	 */
-	async getUserMatches(userId: string): Promise<MatchesResponse> {
+	async getUserMatches(
+		userId: string
+	): Promise<MatchesResponse | MatchServiceResponse> {
 		try {
 			this.logger.debug(
 				`Получение всех матчей для пользователя ${userId}`,
@@ -278,44 +284,63 @@ export class MatchService extends BaseWsService {
 
 			if (!matchKeys || matchKeys.length === 0) {
 				// Если в Redis нет данных, запрашиваем через API
-				const response: MatchesResponse = await this.sendRequest(
-					'getUserMatches',
-					{ userId }
-				)
+				const apiResult = await this.sendRequest('getUserMatches', { userId })
 
-				// Если получены данные от API, кэшируем их в Redis
-				if (response && response.matches && Array.isArray(response.matches)) {
-					// Кэшируем каждый матч
-					for (const match of response.matches) {
-						const matchKey = `match:${userId}:${match.matchUserId}`
-						await this.redisService.redis.hmset(
-							matchKey,
-							'userId',
-							userId,
-							'matchUserId',
-							match.matchUserId,
-							'matchUserName',
-							match.matchUserName || '',
-							'matchUserAvatar',
-							match.matchUserAvatar || '',
-							'createdAt',
-							match.createdAt?.toString() || Date.now().toString(),
-							'seen',
-							match.seen?.toString() || 'true'
-						)
+				// Проверяем, содержит ли ответ API нужные поля
+				if (typeof apiResult === 'object' && apiResult !== null) {
+					const response = apiResult as any
 
-						// Установка TTL для данных о матче
-						await this.redisService.redis.expire(
-							matchKey,
-							this.MATCH_NOTIFICATION_TTL
-						)
+					// Проверяем, есть ли в ответе массив matches и поле count
+					if (Array.isArray(response.matches) && 'count' in response) {
+						// Это валидный ответ с матчами
+						const matches: MatchesResponse = {
+							matches: response.matches,
+							count: response.count,
+						}
+
+						// Кэшируем каждый матч
+						if (matches.matches.length > 0) {
+							for (const match of matches.matches) {
+								const matchKey = `match:${userId}:${match.matchUserId}`
+								await this.redisService.redis.hmset(
+									matchKey,
+									'userId',
+									userId,
+									'matchUserId',
+									match.matchUserId,
+									'matchUserName',
+									match.matchUserName || '',
+									'matchUserAvatar',
+									match.matchUserAvatar || '',
+									'createdAt',
+									match.createdAt?.toString() || Date.now().toString(),
+									'seen',
+									match.seen?.toString() || 'true'
+								)
+
+								// Установка TTL для данных о матче
+								await this.redisService.redis.expire(
+									matchKey,
+									this.MATCH_NOTIFICATION_TTL
+								)
+							}
+						}
+
+						return matches
+					} else if (response.status === 'error' || response.message) {
+						// Это ответ с ошибкой
+						return {
+							message: response.message || 'Ошибка при получении матчей',
+							status: response.status || 'error',
+						}
 					}
 				}
 
-				return response || { matches: [], count: 0 }
+				// Если не удалось классифицировать ответ, возвращаем пустой список
+				return { matches: [], count: 0 }
 			}
 
-			// Явно определяем тип массива
+			// Получаем данные по каждому матчу из Redis
 			const matches: MatchItem[] = []
 
 			// Получаем данные по каждому матчу
@@ -347,9 +372,10 @@ export class MatchService extends BaseWsService {
 				error.stack
 			)
 			return {
+				message: `Произошла ошибка: ${error.message}`,
+				status: 'error',
 				matches: [],
 				count: 0,
-				error: `Произошла ошибка: ${error.message}`,
 			}
 		}
 	}
@@ -357,7 +383,10 @@ export class MatchService extends BaseWsService {
 	/**
 	 * Удаление матча
 	 */
-	async removeMatch(userId: string, matchUserId: string): Promise<any> {
+	async removeMatch(
+		userId: string,
+		matchUserId: string
+	): Promise<MatchActionResponse> {
 		try {
 			this.logger.debug(
 				`Удаление матча между пользователями ${userId} и ${matchUserId}`,
@@ -370,6 +399,7 @@ export class MatchService extends BaseWsService {
 
 			if (!exists) {
 				return {
+					success: false,
 					message: 'Матч не найден',
 					status: 'error',
 				}
@@ -383,8 +413,12 @@ export class MatchService extends BaseWsService {
 			await this.redisService.redis.del(notificationKey)
 
 			// Отправляем запрос к API для синхронизации (если это необходимо)
+			let apiResult: any = null
 			try {
-				await this.sendRequest('removeMatch', { userId, matchUserId })
+				apiResult = await this.sendRequest('removeMatch', {
+					userId,
+					matchUserId,
+				})
 			} catch (apiError) {
 				this.logger.warn(
 					`Не удалось синхронизировать удаление матча с API: ${apiError.message}`,
@@ -394,8 +428,11 @@ export class MatchService extends BaseWsService {
 			}
 
 			return {
+				success: true,
 				message: 'Матч успешно удален',
 				status: 'success',
+				otherUserId: matchUserId, // Возвращаем ID другого пользователя
+				...(apiResult && typeof apiResult === 'object' ? apiResult : {}),
 			}
 		} catch (error) {
 			this.logger.error(
@@ -403,6 +440,7 @@ export class MatchService extends BaseWsService {
 				error.stack
 			)
 			return {
+				success: false,
 				message: `Ошибка при удалении матча: ${error.message}`,
 				status: 'error',
 			}

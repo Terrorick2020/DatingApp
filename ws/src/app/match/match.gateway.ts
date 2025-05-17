@@ -16,7 +16,8 @@ import { MatchService } from './match.service'
 import { MemoryCacheService } from '../memory-cache.service'
 import { Injectable } from '@nestjs/common'
 import { RedisService } from '../redis/redis.service'
-import { GetUserMatchesDto, MatchesResponseDto } from './dto/match.dto'
+import { GetUserMatchesDto } from './dto/match.dto'
+import { MatchesResponse, MatchServiceResponse } from './match.service'
 
 @WebSocketGateway({
 	namespace: 'matches',
@@ -100,9 +101,21 @@ export class MatchGateway extends BaseWsGateway<
 		}
 	}
 
-	// Type guard функция для проверки типа ответа
-	isMatchesResponse(obj: any): obj is MatchesResponseDto {
-		return obj && Array.isArray(obj.matches) && typeof obj.count === 'number'
+	/**
+	 * Проверка, является ли ответ успешным списком матчей
+	 */
+	private isMatchesResponse(response: any): response is MatchesResponse {
+		return response && 
+			Array.isArray(response.matches) && 
+			typeof response.count === 'number';
+	}
+	
+	/**
+	 * Проверка, является ли ответ ошибкой
+	 */
+	private isErrorResponse(response: any): response is MatchServiceResponse {
+		return response && 
+			(response.status === 'error' || response.message);
 	}
 
 	/**
@@ -126,20 +139,26 @@ export class MatchGateway extends BaseWsGateway<
 				// Если нет в кэше, запрашиваем через API
 				const result = await this.matchService.getUserMatches(data.telegramId)
 
-				// Проверяем тип результата с использованием type guard
+				// Проверяем, является ли результат успешным списком матчей
 				if (this.isMatchesResponse(result)) {
-					// Результат типа MatchesResponseDto
+					// Результат содержит список матчей
 					this.sendToUser(data.telegramId, 'userMatches', result)
 
 					// Кэшируем результат на 2 минуты
 					if (result.matches && result.matches.length > 0) {
 						this.cacheService.set(cacheKey, result, 120)
 					}
-				} else {
-					// Результат типа MatchServiceResponseDto (ошибка)
+				} else if (this.isErrorResponse(result)) {
+					// Результат содержит ошибку
 					this.sendToUser(data.telegramId, 'matchesError', {
 						message: result.message || 'Ошибка при получении матчей',
 						status: result.status || 'error',
+					})
+				} else {
+					// Неизвестный результат
+					this.sendToUser(data.telegramId, 'matchesError', {
+						message: 'Неизвестная ошибка при получении матчей',
+						status: 'error',
 					})
 				}
 			}
@@ -154,8 +173,6 @@ export class MatchGateway extends BaseWsGateway<
 			})
 		}
 	}
-
-	
 
 	/**
 	 * Обработка запроса на удаление матча
