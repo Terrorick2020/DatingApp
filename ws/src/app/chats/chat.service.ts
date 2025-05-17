@@ -7,7 +7,8 @@ import { AddChatDto } from './dto/add-chat.dto'
 import { ChatsServerMethods } from '@/types/chat.types'
 import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { ResConnectionDto } from '@/abstract/dto/response.dto'
-import { Logger } from '@nestjs/common'
+import { ConnectionStatus } from '~/src/types/base.types'
+import { ChatPreview } from '@/types/chat.types'
 
 @Injectable()
 export class ChatService extends BaseWsService {
@@ -211,7 +212,7 @@ export class ChatService extends BaseWsService {
 			}
 
 			// Собираем данные о чатах
-			const chatPreviews = []
+			const chatPreviews: ChatPreview[] = []
 
 			for (const chatId of chatIds) {
 				const chatKey = `chat:${chatId}`

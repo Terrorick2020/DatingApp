@@ -4,13 +4,12 @@ import { ConfigService } from '@nestjs/config'
 import { RedisService } from '../redis/redis.service'
 import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { LikeTriggerDto } from './dto/trigger.dto'
-import { SendMatchTcpPatterns } from '@/types/like.types'
+import { SendMatchTcpPatterns } from '@/types/match.type'
 import { ResConnectionDto } from '@/abstract/dto/response.dto'
-import { Logger } from '@nestjs/common'
+import { ConnectionStatus } from '~/src/types/base.types'
 
 @Injectable()
 export class LikeService extends BaseWsService {
-
 	constructor(
 		protected readonly configService: ConfigService,
 		private readonly redisService: RedisService
@@ -206,7 +205,7 @@ export class LikeService extends BaseWsService {
 			return {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
-				status: 'success',
+				status: ConnectionStatus.Success,
 			}
 		} catch (error) {
 			this.logger.error(
@@ -217,7 +216,7 @@ export class LikeService extends BaseWsService {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
 				message: `Ошибка при подключении к комнате: ${error.message}`,
-				status: 'error',
+				status: ConnectionStatus.Error,
 			}
 		}
 	}
@@ -239,7 +238,7 @@ export class LikeService extends BaseWsService {
 			return {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
-				status: 'success',
+				status: ConnectionStatus.Success,
 			}
 		} catch (error) {
 			this.logger.error(
@@ -250,7 +249,7 @@ export class LikeService extends BaseWsService {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
 				message: `Ошибка при отключении от комнаты: ${error.message}`,
-				status: 'error',
+				status: ConnectionStatus.Error,
 			}
 		}
 	}

@@ -9,6 +9,18 @@ export interface ChatsToUser {
 	writeStat: EWriteType
 }
 
+export interface ChatPreview {
+	chatId: string;
+	toUser: {
+	  id: string;
+	  avatar: string;
+	  name: string;
+	};
+	lastMsg: string;
+	created_at: number;
+	unread_count: number;
+  }
+
 export enum EWriteType {
 	None = 'None',
 	Write = 'Write',

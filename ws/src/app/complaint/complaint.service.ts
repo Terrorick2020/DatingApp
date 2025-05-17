@@ -7,12 +7,10 @@ import { ComplaintUpdateDto } from './dto/complaint-update.dto'
 import { SendComplaintTcpPatterns } from '@/types/complaint.types'
 import { ConnectionDto } from '@/abstract/dto/connection.dto'
 import { ResConnectionDto } from '@/abstract/dto/response.dto'
-import { Logger } from '@nestjs/common'
+import { ConnectionStatus } from '~/src/types/base.types'
 
 @Injectable()
 export class ComplaintService extends BaseWsService {
-	private readonly logger = new Logger(ComplaintService.name)
-
 	constructor(
 		protected readonly configService: ConfigService,
 		private readonly redisService: RedisService
@@ -278,7 +276,7 @@ export class ComplaintService extends BaseWsService {
 			return {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
-				status: 'success',
+				status: ConnectionStatus.Success,
 			}
 		} catch (error) {
 			this.logger.error(
@@ -289,7 +287,7 @@ export class ComplaintService extends BaseWsService {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
 				message: `Ошибка при подключении к комнате: ${error.message}`,
-				status: 'error',
+				status: ConnectionStatus.Error,
 			}
 		}
 	}
@@ -311,7 +309,7 @@ export class ComplaintService extends BaseWsService {
 			return {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
-				status: 'success',
+				status: ConnectionStatus.Success,
 			}
 		} catch (error) {
 			this.logger.error(
@@ -322,7 +320,7 @@ export class ComplaintService extends BaseWsService {
 				roomName: connectionDto.roomName,
 				telegramId: connectionDto.telegramId,
 				message: `Ошибка при отключении от комнаты: ${error.message}`,
-				status: 'error',
+				status: ConnectionStatus.Error,
 			}
 		}
 	}
