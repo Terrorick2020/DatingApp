@@ -12,45 +12,40 @@ async function bootstrap() {
 	// Получаем конфигурацию из ConfigService
 	const configService = app.get(ConfigService)
 
-	// Получаем инстанс номер для шардирования
-	const instanceId = configService.get<string>('INSTANCE_ID', '0')
-	const totalInstances = parseInt(
-		configService.get<string>('TOTAL_INSTANCES', '1')
-	)
+	// Получаем инстанс номер для шардирования с корректной проверкой
+	const instanceIdStr = configService.get<string>('INSTANCE_ID', '0')
+	const instanceId = parseInt(instanceIdStr) || 0 // Добавляем fallback к 0 в случае NaN
 
-	// Настраиваем порт в зависимости от инстанса
-	const basePort = parseInt(configService.get('PORT', '7000'))
-	const port = basePort + parseInt(instanceId)
+	const totalInstancesStr = configService.get<string>('TOTAL_INSTANCES', '1')
+	const totalInstances = parseInt(totalInstancesStr) || 1 // Добавляем fallback к 1 в случае NaN
+
+	// Настраиваем порт в зависимости от инстанса с проверкой на NaN
+	const basePortStr = configService.get('PORT', '7000')
+	const basePort = parseInt(basePortStr) || 7000 // Добавляем fallback к 7000
+	const port = basePort + instanceId
 
 	// Включаем TCP для микросервисной коммуникации
 	const tcpHost = configService.get<string>('TCP_HOST', 'localhost')
 	const tcpPortStr = configService.get<string>('TCP_PORT', '7755')
+	const tcpPort = parseInt(tcpPortStr) || 7755 // Добавляем fallback к 7755
 
-	// Безопасное преобразование строки в число
-	let tcpPort: number
-	try {
-		tcpPort = parseInt(tcpPortStr)
-		if (isNaN(tcpPort)) throw new Error('Not a number')
-	} catch (e) {
-		logger.warn(`Invalid TCP_PORT value: "${tcpPortStr}", using default 7755`)
-		tcpPort = 7755
-	}
-
-	// Добавьте логирование для отладки
-	logger.log(`Using TCP port: ${tcpPort}`)
+	logger.log(
+		`Using TCP port: ${tcpPort}, Instance ID: ${instanceId}, Total Instances: ${totalInstances}`
+	)
+	logger.log(`WebSocket server will start on port: ${port}`)
 
 	app.connectMicroservice<MicroserviceOptions>({
 		transport: Transport.TCP,
 		options: {
 			host: tcpHost,
-			port: tcpPort, // Используем безопасно преобразованный порт
+			port: tcpPort,
 		},
 	})
 
 	// Настраиваем WebSocket-адаптер с шардированием
 	app.useWebSocketAdapter(
 		new AppAdapter(app, {
-			instanceId: parseInt(instanceId),
+			instanceId,
 			totalInstances,
 
 			// Функция для распределения пользователей по серверам
@@ -74,9 +69,7 @@ async function bootstrap() {
 	logger.log(
 		`WebSocket server instance ${instanceId}/${totalInstances} started on port ${port}`
 	)
-	logger.log(
-		`TCP microservice running on ${tcpHost}:${tcpPort + parseInt(instanceId)}`
-	)
+	logger.log(`TCP microservice running on ${tcpHost}:${tcpPort}`)
 }
 
 bootstrap().catch(err => {
