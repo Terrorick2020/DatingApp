@@ -26,8 +26,8 @@ async function bootstrap() {
 
 	// Включаем TCP для микросервисной коммуникации
 	const tcpHost = configService.get<string>('TCP_HOST', 'localhost')
-	const tcpPortStr = configService.get<string>('TCP_PORT', '7755')
-	const tcpPort = parseInt(tcpPortStr) || 7755 // Добавляем fallback к 7755
+	const tcpPortStr = configService.get<string>('TCP_PORT', '7756')
+	const tcpPort = parseInt(tcpPortStr) || 7756 // Добавляем fallback к 7756
 
 	logger.log(
 		`Using TCP port: ${tcpPort}, Instance ID: ${instanceId}, Total Instances: ${totalInstances}`

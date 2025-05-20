@@ -120,8 +120,8 @@ export class MonitoringService implements OnModuleInit {
 				'rooms.total': metrics.rooms.total,
 				'memory.usedPercent': systemMetrics.memory.usedPercent,
 				'cpu.load': systemMetrics.cpu[0],
-				'uptime': systemMetrics.uptime
-			  });
+				uptime: systemMetrics.uptime,
+			})
 
 			// Публикуем метрики в Redis для агрегации
 			await this.redisService.redis.publish(
@@ -130,7 +130,7 @@ export class MonitoringService implements OnModuleInit {
 			)
 
 			// Сохраняем некоторые метрики в Redis для мониторинга
-			await this.redisService.redis.hset(
+			await this.redisService.redis.hmset(
 				`metrics:${os.hostname()}:${process.pid}`,
 				'timestamp',
 				Date.now().toString(),
