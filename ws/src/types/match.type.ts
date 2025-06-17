@@ -9,7 +9,7 @@ export interface TrigFromUser {
 }
 
 export enum MatchServerMethods {
-    Trigger = 'Trigger',
+    Trigger = 'Match',
 }
 
 export enum MatchClientMethods {
