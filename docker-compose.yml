@@ -13,8 +13,27 @@ services:
     ports:
       - '5432:5432'
 
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - '6379:6379'
+    networks:
+      - planner_network
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis.conf
+      - ./redis/entrypoint.sh:/usr/local/bin/entrypoint.sh
+    command: ['sh', '/usr/local/bin/entrypoint.sh']
+    env_file:
+      - .env
+
   bot:
-    image: ${DOCKER_USER}/bot:latest
+    build: ./bot
     restart: unless-stopped
     dns:
       - 8.8.8.8
@@ -26,30 +45,25 @@ services:
       - bot/.env
     ports:
       - '9000:9000'
-
+  
   api:
-    image: ${DOCKER_USER}/api:latest
+    build: ./api
     restart: unless-stopped
     depends_on:
       - db
+      - redis
       - bot
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
     networks:
       - planner_network
     volumes:
       - ./logs:/usr/app/logs
-    env_file:
-      - api/.env
     ports:
       - '3000:3000'
-
+      - '7755:7755'
+ 
   client:
     build: ./client
     restart: unless-stopped
-    environment:
-      - VITE_API_URL=https://3dating.fun/api
-      - VITE_WS_URL=wss://3dating.fun
     depends_on:
       - db
       - bot
@@ -60,7 +74,7 @@ services:
       - client/.env
     ports:
       - '4173:4173'
-
+  
   proxy:
     build: ./nginx
     restart: unless-stopped
@@ -68,7 +82,7 @@ services:
       - db
       - bot
       - api
-      - client
+      # - client
     networks:
       - planner_network
     ports:
@@ -80,66 +94,61 @@ services:
       - certbot_data:/var/www/certbot
     command: ['/bin/bash', '-c', "nginx -g 'daemon off;'"]
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - planner_network
-    ports:
-      - '9200:9200'
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #     networks:
+  #     - planner_network
+  #     ports:
+  #     - '9200:9200'
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.12.0
-    container_name: kibana
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.12.0
+  #   container_name: kibana
+  #   depends_on:
+  #     - elasticsearch
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   networks:
+  #     - planner_network
+  #   ports:
+  #     - '5601:5601'
+
+  # logstash:
+  #   image: docker.elastic.co/logstash/logstash:8.12.0
+  #   container_name: logstash
+  #   depends_on:
+  #     - elasticsearch
+  #     volumes:
+  #     - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+  #     - ./logs:/usr/app/logs
+  #   networks:
+  #     - planner_network
+  #   ports:
+  #     - '5044:5044'
+  #     - '5000:5000'
+  #     - '9600:9600'
+  #   command: logstash -e 'input { file { path => "/usr/app/logs/*.log" start_position => "beginning" } } output { elasticsearch { hosts => ["http://elasticsearch:9200"] } }'
+
+  ws:
+    build: ./ws
+    restart: unless-stopped
     depends_on:
-      - elasticsearch
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - redis
+      - api
     networks:
       - planner_network
+    env_file:
+      - ws/.env
     ports:
-      - '5601:5601'
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.12.0
-    container_name: logstash
-    depends_on:
-      - elasticsearch
-    volumes:
-      - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./logs:/usr/app/logs
-    networks:
-      - planner_network
-    ports:
-      - '5044:5044'
-      - '5000:5000'
-      - '9600:9600'
-    command: logstash -e 'input { file { path => "/usr/app/logs/*.log" start_position => "beginning" } } output { elasticsearch { hosts => ["http://elasticsearch:9200"] } }'
-
-    redis:
-      image: redis:7.2-alpine
-      container_name: redis
-      restart: unless-stopped
-      environment:
-        - REDIS_HOST=${REDIS_HOST}
-        - REDIS_PORT=${REDIS_PORT}
-        - REDIS_DB=${REDIS_DB}
-        - REDIS_PASSWORD=${REDIS_PASSWORD}
-      ports:
-        - '6379:6379'
-      networks:
-        - planner_network
-      volumes:
-        - ./redis/entrypoint.sh:/usr/local/bin/entrypoint.sh
-      command: ['sh', '/usr/local/bin/entrypoint.sh']
-      env_file:
-        - ./api/.env
+      - '7000:7000'
+      - '7756:7756'
 
 volumes:
   certbot_data:
