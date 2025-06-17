@@ -22,7 +22,7 @@ export class MessagesService extends BaseWsService {
 	/**
 	 * Оптимизированный метод отправки сообщения
 	 */
-	async sendMsg(msgsUpdateMsgDto: MsgsUpdateMsgDto): Promise<any> {
+	async sendMsg(msgsUpdateMsgDto: MsgsSendMsgDto): Promise<any> {
 		try {
 			// Проверяем существование чата напрямую через Redis
 			const { chatId, telegramId, newMsg, roomName } = msgsUpdateMsgDto

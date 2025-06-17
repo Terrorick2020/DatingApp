@@ -104,7 +104,7 @@ export abstract class BaseWsGateway<
 	async handleJoinRoom(
 		@MessageBody() connectionDto: ConnectionDto,
 		@ConnectedSocket() client: Socket
-	): Promise<void> {
+	): Promise<any> {
 		const { telegramId, roomName } = connectionDto
 
 		try {
@@ -154,6 +154,12 @@ export abstract class BaseWsGateway<
 				telegramId,
 				status: ConnectionStatus.Success,
 			})
+
+			return {
+				roomName: roomName || telegramId,
+				telegramId,
+				status: ConnectionStatus.Success,
+			}
 		} catch (error) {
 			this.logger.error(
 				`Error handling join room for ${telegramId}: ${error.message}`,
@@ -165,6 +171,13 @@ export abstract class BaseWsGateway<
 				message: 'Error joining room',
 				status: ConnectionStatus.Error,
 			})
+
+			return {
+				roomName: roomName || telegramId,
+				telegramId,
+				message: 'Error joining room',
+				status: ConnectionStatus.Error,
+			}
 		}
 	}
 
@@ -172,7 +185,7 @@ export abstract class BaseWsGateway<
 	async handleLeaveRoom(
 		@MessageBody() connectionDto: ConnectionDto,
 		@ConnectedSocket() client: Socket
-	): Promise<void> {
+	): Promise<any> {
 		const { telegramId, roomName } = connectionDto
 
 		try {
@@ -205,6 +218,12 @@ export abstract class BaseWsGateway<
 				telegramId,
 				status: ConnectionStatus.Success,
 			})
+
+			return {
+				roomName,
+				telegramId,
+				status: ConnectionStatus.Success,
+			}
 		} catch (error) {
 			this.logger.error(
 				`Error handling leave room for ${telegramId}: ${error.message}`,
@@ -216,6 +235,13 @@ export abstract class BaseWsGateway<
 				message: 'Error leaving room',
 				status: ConnectionStatus.Error,
 			})
+
+			return {
+				roomName,
+				telegramId,
+				message: 'Error leaving room',
+				status: ConnectionStatus.Error,
+			}
 		}
 	}
 

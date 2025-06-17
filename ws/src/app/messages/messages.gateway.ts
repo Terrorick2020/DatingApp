@@ -144,30 +144,30 @@ export class MessagesGateway extends BaseWsGateway<
 				error.stack
 			)
 
-			this.sendToUser(
-				msgsSendMsgDto.roomName,
-				MsgsClientMethods.UpdateMsgData,
-				{
-					message: 'Ошибка при обновлении сообщения',
-					status: 'error',
-				}
-			)
+			// this.sendToUser(
+			// 	msgsSendMsgDto.roomName,
+			// 	MsgsClientMethods.UpdateMsgData,
+			// 	{
+			// 		message: 'Ошибка при обновлении сообщения',
+			// 		status: 'error',
+			// 	}
+			// )
 		}
 	}
 
 	@SubscribeMessage(MsgsServerMethods.SendMsg)
 	async handleSendMsg(
-		@MessageBody() msgsUpdateMsgDto: MsgsUpdateMsgDto
+		@MessageBody() msgsSendMsgDto: MsgsSendMsgDto
 	): Promise<void> {
 		try {
 			this.logger.debug(
-				`Processing SendMsg: ${JSON.stringify(msgsUpdateMsgDto)}`
+				`Processing SendMsg: ${JSON.stringify(msgsSendMsgDto)}`
 			)
-			const response = await this.messagesService.sendMsg(msgsUpdateMsgDto)
+			const response = await this.messagesService.sendMsg(msgsSendMsgDto)
 
 			// Отправляем подтверждение отправителю
 			this.sendToUser(
-				msgsUpdateMsgDto.roomName,
+				msgsSendMsgDto.roomName,
 				MsgsClientMethods.SendMsgData,
 				response
 			)
@@ -182,9 +182,9 @@ export class MessagesGateway extends BaseWsGateway<
 					JSON.stringify({
 						chatId: response.chatId,
 						messageId: response.msgId,
-						fromUser: msgsUpdateMsgDto.telegramId,
+						fromUser: msgsSendMsgDto.telegramId,
 						toUser: recipientId,
-						text: msgsUpdateMsgDto.newMsg,
+						text: msgsSendMsgDto.newMsg,
 						timestamp: response.createdAt,
 					})
 				)
@@ -192,14 +192,14 @@ export class MessagesGateway extends BaseWsGateway<
 		} catch (error) {
 			this.logger.error(`Error in handleSendMsg: ${error.message}`, error.stack)
 
-			this.sendToUser(
-				msgsUpdateMsgDto.roomName,
-				MsgsClientMethods.SendMsgData,
-				{
-					message: 'Ошибка при отправке сообщения',
-					status: 'error',
-				}
-			)
+			// this.sendToUser(
+			// 	MsgsSendMsgDto.roomName,
+			// 	MsgsClientMethods.SendMsgData,
+			// 	{
+			// 		message: 'Ошибка при отправке сообщения',
+			// 		status: 'error',
+			// 	}
+			// )
 		}
 	}
 
@@ -211,7 +211,9 @@ export class MessagesGateway extends BaseWsGateway<
 		try {
 			// Если пользователь онлайн (имеет активные сокеты)
 			if (this.isUserOnline(userId)) {
-				this.sendToUser(userId, 'newMessage', messageData)
+				// this.sendToUser(userId, 'newMessage', messageData)
+
+				this.sendToRoom(userId, 'newMessage', messageData)
 
 				this.logger.debug(`Sent direct message notification to user ${userId}`)
 			} else {
@@ -220,6 +222,60 @@ export class MessagesGateway extends BaseWsGateway<
 		} catch (error) {
 			this.logger.error(
 				`Error sending direct message notification: ${error.message}`,
+				error.stack
+			)
+		}
+	}
+
+	// Метод для прямого уведомления пользователя о статусе Печатает
+	async sendDirectTypingStatus(
+		participants: string[],
+		userId: string,
+		isTyping: boolean,
+	): Promise<void> {
+		try {
+			const recipientId = participants.find(item => item !== userId)
+
+			// Если пользователь онлайн (имеет активные сокеты)
+			if (recipientId !== undefined && this.isUserOnline(recipientId)) {
+				// this.sendToUser(userId, 'newMessage', messageData)
+
+				this.sendToRoom(recipientId, 'typingStatus', {
+					userId,
+					isTyping,
+				})
+
+				this.logger.debug(`Sent direct typing status notification to user ${recipientId}`)
+			} else {
+				this.logger.debug(`User ${recipientId} is offline, not sending notification`)
+			}
+		} catch (error) {
+			this.logger.error(
+				`Error sending direct typing notification: ${error.message}`,
+				error.stack
+			)
+		}
+	}
+
+	updateReadedMsgs(
+		userId: string,
+		msgsId: string [],
+		chatId: string
+	) {
+		try {
+			if (this.isUserOnline(userId)) {
+				this.sendToRoom(userId, 'messageRead', {
+					chatId,
+					msgsId,
+				})
+
+				this.logger.debug(`Sent direct readed msgs notification to user ${userId}`)
+			} else {
+				this.logger.debug(`User ${userId} is offline, not sending notification`)
+			}
+		} catch (error) {
+			this.logger.error(
+				`Error sending direct readed msgs notification: ${error.message}`,
 				error.stack
 			)
 		}
@@ -241,7 +297,12 @@ export class MessagesGateway extends BaseWsGateway<
 			const otherTypingUsers = typingUsers.filter(id => id !== userId)
 
 			// Отправляем статус
-			this.sendToUser(userId, 'typingStatus', {
+			// this.sendToUser(userId, 'typingStatus', {
+			// 	chatId,
+			// 	typingUsers: otherTypingUsers,
+			// })
+
+			this.sendToRoom(userId, 'typingStatus', {
 				chatId,
 				typingUsers: otherTypingUsers,
 			})
@@ -260,6 +321,7 @@ export class MessagesGateway extends BaseWsGateway<
 	): Promise<void> {
 		try {
 			const { userId, chatId, isTyping } = data
+
 
 			// Ключ для хранения статусов печати в чате
 			const typingKey = `chat:${chatId}:typing`
@@ -290,11 +352,18 @@ export class MessagesGateway extends BaseWsGateway<
 							// Проверяем, онлайн ли собеседник
 							if (this.isUserOnline(otherUser)) {
 								// Отправляем напрямую через WebSocket
-								this.sendToUser(otherUser, 'typingStatus', {
+								// this.sendToUser(otherUser, 'typingStatus', {
+								// 	chatId,
+								// 	userId,
+								// 	isTyping,
+								// })
+
+								this.sendToRoom(otherUser, 'typingStatus', {
 									chatId,
 									userId,
 									isTyping,
 								})
+
 							}
 						}
 					}
