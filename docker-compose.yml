@@ -1,158 +1,120 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:latest
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    networks:
-      - planner_network
-    env_file:
-      - .env
-    ports:
-      - '5432:5432'
-
-  redis:
-    image: redis:7.2-alpine
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    ports:
-      - '6379:6379'
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - planner_network
     volumes:
-      - ./redis/redis.conf:/usr/local/etc/redis.conf
-      - ./redis/entrypoint.sh:/usr/local/bin/entrypoint.sh
-    command: ['sh', '/usr/local/bin/entrypoint.sh']
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
     env_file:
       - .env
 
-  # bot:
-  #   build: ./bot
-  #   restart: unless-stopped
-  #   dns:
-  #     - 8.8.8.8
-  #     - 8.8.4.4
-  #     - 1.1.1.1
-  #   networks:
-  #     - planner_network
-  #   env_file:
-  #     - bot/.env
-  #   ports:
-  #     - '9000:9000'
-  
-  # api:
-  #   build: ./api
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - db
-  #     - redis
-  #     - bot
-  #   networks:
-  #     - planner_network
-  #   volumes:
-  #     - ./logs:/usr/app/logs
-  #   ports:
-  #     - '3000:3000'
-  #     - '7755:7755'
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - planner_network
+    volumes:
+      - redis_data:/data
 
-  # client:
-  #   build: ./client
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - db
-  #     - bot
-  #     - api
-  #   networks:
-  #     - planner_network
-  #   env_file:
-  #     - client/.env
-  #   ports:
-  #     - '4173:4173'
-  
-  # proxy:
-  #   build: ./nginx
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - db
-  #     - bot
-  #     - api
-  #     # - client
-  #   networks:
-  #     - planner_network
-  #   ports:
-  #     - '80:80'
-  #     - '443:443'
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-  #     - ./nginx/ssl:/etc/nginx/ssl
-  #     - certbot_data:/var/www/certbot
-  #   command: ['/bin/bash', '-c', "nginx -g 'daemon off;'"]
+  bot:
+    image: ${DOCKER_USER}/bot:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    networks:
+      - planner_network
+    env_file:
+      - bot/.env
+    ports:
+      - '9000:9000'
 
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-  #   container_name: elasticsearch
-  #   environment:
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=false
-  #       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-  #     networks:
-  #     - planner_network
-  #     ports:
-  #     - '9200:9200'
+  api:
+    image: ${DOCKER_USER}/api:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - planner_network
+    volumes:
+      - ./logs:/api/logs
+    env_file:
+      - api/.env
+    ports:
+      - '3000:3000'
+      - '7755:7755'
 
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:8.12.0
-  #   container_name: kibana
-  #   depends_on:
-  #     - elasticsearch
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #   networks:
-  #     - planner_network
-  #   ports:
-  #     - '5601:5601'
+  ws:
+    image: ${DOCKER_USER}/ws:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+      - api
+    networks:
+      - planner_network
+    env_file:
+      - ws/.env
+    environment:
+      TCP_HOST: ws
+      TCP_PORT: 7756
+      API_TCP_HOST: api
+      API_TCP_PORT: 7755
+      REDIS_HOST: redis
+    ports:
+      - '7000:7000'
+      - '7756:7756'
 
-  # logstash:
-  #   image: docker.elastic.co/logstash/logstash:8.12.0
-  #   container_name: logstash
-  #   depends_on:
-  #     - elasticsearch
-  #     volumes:
-  #     - ./elk/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-  #     - ./logs:/usr/app/logs
-  #   networks:
-  #     - planner_network
-  #   ports:
-  #     - '5044:5044'
-  #     - '5000:5000'
-  #     - '9600:9600'
-  #   command: logstash -e 'input { file { path => "/usr/app/logs/*.log" start_position => "beginning" } } output { elasticsearch { hosts => ["http://elasticsearch:9200"] } }'
+  client:
+    image: ${DOCKER_USER}/client:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - planner_network
+    environment:
+      - VITE_API_URL=https://3dating.fun/api
+      - VITE_WS_URL=wss://3dating.fun
+    ports:
+      - '4173:80'
+    env_file:
+      - client/.env
 
-  # ws:
-  #   build: ./ws
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - redis
-  #     - api
-  #   networks:
-  #     - planner_network
-  #   env_file:
-  #     - ws/.env
-  #   ports:
-  #     - '7000:7000'
-  #     - '7756:7756'
+  proxy:
+    build: ./nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+      - client
+    networks:
+       planner_network:
+         aliases:
+          - api
+          - client
+          - ws
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - certbot_data:/var/www/certbot
+    command: ['/bin/bash', '-c', "nginx -g 'daemon off;'"]
 
 volumes:
   certbot_data:
-  elasticsearch_data:
+  db_data:
+  redis_data:
 
 networks:
   planner_network:
