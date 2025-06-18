@@ -1,8 +1,8 @@
 import { IsString } from 'class-validator';
-import { BaseWsConnectionDto } from '@/abstract/dto/connection.dto';
+import { ConnectionDto } from '@/abstract/dto/connection.dto';
 
 
-export class DeleteChatDto extends BaseWsConnectionDto {
+export class DeleteChatDto extends ConnectionDto {
     @IsString()
     chatId!:string
 }

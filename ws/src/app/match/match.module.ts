@@ -3,6 +3,7 @@ import { MatchGateway } from './match.gateway';
 import { MatchService } from './match.service';
 
 @Module({
-  providers: [MatchGateway, MatchService]
+  providers: [MatchGateway, MatchService],
+  exports: [MatchService, MatchGateway],
 })
 export class MatchModule {}

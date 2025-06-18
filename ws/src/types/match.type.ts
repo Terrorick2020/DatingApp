@@ -12,6 +12,10 @@ export enum MatchServerMethods {
     Trigger = 'Match',
 }
 
+export enum SendMatchTcpPatterns {
+    Trigger = 'Match'
+}
+
 export enum MatchClientMethods {
     TriggerData = 'TriggerData',
 }
