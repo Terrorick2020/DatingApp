@@ -43,6 +43,7 @@ services:
       - api/.env
     ports:
       - '3000:3000'
+      - '7755:7755'
 
   client:
     build: ./client
@@ -60,6 +61,27 @@ services:
       - client/.env
     ports:
       - '4173:4173'
+
+  ws:
+    image: ${DOCKER_USER}/ws:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+      - api
+    environment:
+      - TCP_HOST=ws
+      - TCP_PORT=7756
+      - API_TCP_HOST=api
+      - API_TCP_PORT=7755
+      - REDIS_HOST=redis
+    networks:
+      - planner_network
+    env_file:
+      - ws/.env
+    ports:
+      - '7000:7000'  # WebSocket порт для клиентов
+      - '7756:7756'  # TCP порт для микросервисной коммуникации
 
   proxy:
     build: ./nginx

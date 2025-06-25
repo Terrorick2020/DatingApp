@@ -1,25 +1,25 @@
-FROM node:20-alpine AS deps
+FROM oven/bun:latest
 WORKDIR /ws
 
-RUN npm install -g @nestjs/cli@latest
-
+# Копирование package.json и lockfile
 COPY package*.json ./
-RUN npm install --legacy-peer-deps --prefer-offline
+COPY bun.lockb ./
 
-FROM node:20-alpine AS builder
-WORKDIR /ws
-COPY --from=deps /ws/node_modules ./node_modules
-COPY . . 
-RUN npm install -g @nestjs/cli
-RUN npm run build
+# Установка зависимостей
+RUN bun install
 
-FROM node:20-alpine
-WORKDIR /ws
-COPY --from=builder /ws/dist ./dist
-COPY --from=builder /ws/node_modules ./node_modules
-COPY package*.json ./
+# Копирование всего проекта
+COPY . .
 
-RUN npm install --omit=dev --prefer-offline
+# Сборка приложения
+RUN bun run build
 
+# Установка только production зависимостей
+# (эквивалент npm install --omit=dev --prefer-offline)
+RUN bun install --production
+
+# Открытие порта
 EXPOSE 7000
-CMD ["node", "dist/main.js"]
+
+# Запуск приложения
+CMD ["bun", "dist/main.js"]
