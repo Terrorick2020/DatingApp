@@ -18,6 +18,8 @@ export class RedisSubscriberService implements OnModuleInit, OnModuleDestroy {
 	private subscriber: Redis
 	private readonly channels = [
 		'chat:newMessage',
+		'chat:messageRead',
+		'chat:typing',
 		'chat:update',
 		'user:status',
 		'like:new',
@@ -87,6 +89,12 @@ export class RedisSubscriberService implements OnModuleInit, OnModuleDestroy {
 			case 'chat:newMessage':
 				this.handleNewMessage(data)
 				break
+			case 'chat:messageRead':
+				this.handleGetReadedMsgs(data)
+				break
+			case 'chat:typing':
+				this.handleGetInterlocTyping(data)
+				break
 			case 'chat:update':
 				this.handleChatUpdate(data)
 				break
@@ -113,6 +121,27 @@ export class RedisSubscriberService implements OnModuleInit, OnModuleDestroy {
 		// Проверяем, есть ли получатель онлайн
 		if (recipientId) {
 			this.messagesGateway.sendDirectMessageNotification(recipientId, data)
+		}
+	}
+
+	private handleGetInterlocTyping(data: any) {
+		const { chatId, participants, userId, isTyping } = data;
+
+		if(participants.length) {
+			this.messagesGateway.sendDirectTypingStatus(participants, userId, isTyping)
+		}
+	}
+
+	private handleGetReadedMsgs(data: {
+		chatId: string,
+		userId: string,
+		messageIds: string[],
+		timestamp: number
+	}) {
+		const { userId, messageIds, chatId } = data
+
+		if(messageIds.length) {
+			this.messagesGateway.updateReadedMsgs(userId, messageIds, chatId)
 		}
 	}
 

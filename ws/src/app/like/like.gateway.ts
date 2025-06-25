@@ -55,7 +55,8 @@ export class LikeGateway extends BaseWsGateway<
 			// Проверяем, онлайн ли пользователь
 			if (this.isUserOnline(userId)) {
 				// Отправляем уведомление пользователю через его личную комнату
-				this.sendToUser(userId, 'newLike', likeData)
+				// this.sendToUser(userId, 'newLike', likeData)
+				this.sendToRoom(userId, 'newLike', likeData);
 				this.logger.debug(
 					`Отправлено уведомление о лайке пользователю ${userId}`
 				)

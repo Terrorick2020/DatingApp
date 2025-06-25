@@ -329,14 +329,19 @@ export class ChatGateway extends BaseWsGateway<
 	async sendChatUpdate(userId: string, updateData: any): Promise<void> {
 		if (this.isUserOnline(userId)) {
 			this.sendToUser(userId, 'chatUpdate', updateData)
+			console.log( userId )
 			this.logger.debug(`Sent chat update to user ${userId}`)
 		}
 	}
 
 	// Отправка уведомления об изменении статуса пользователя
 	async sendUserStatusUpdate(userId: string, statusData: any): Promise<void> {
+		console.log( userId )
+		console.log( this.isUserOnline(userId) )
 		if (this.isUserOnline(userId)) {
-			this.sendToUser(userId, 'userStatus', statusData)
+			// this.sendToUser(userId, 'userStatus', statusData)
+			console.log( userId )
+			this.sendToRoom(userId, 'userStatus', statusData)
 			this.logger.debug(`Sent user status update to user ${userId}`)
 		}
 	}

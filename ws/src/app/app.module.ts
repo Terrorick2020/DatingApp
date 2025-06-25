@@ -14,6 +14,7 @@ import { MonitoringModule } from './monitoring/monitoring.module'
 import { RedisSubscriberService } from './redis-subscriber.service'
 import { RedisModule } from './redis/redis.module'
 import { MemoryCacheModule } from './cache/memory-cache.module'
+import { BotModule } from '../../../bot/src/bot/bot.module'
 
 @Module({
 	imports: [
@@ -32,6 +33,7 @@ import { MemoryCacheModule } from './cache/memory-cache.module'
 		ComplaintModule,
 		LikeModule,
 		MemoryCacheModule,
+		BotModule,
 	],
 	providers: [
 		RedisSubscriberService, // Сервис для Redis Pub/Sub
