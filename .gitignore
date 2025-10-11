@@ -29,3 +29,4 @@ client/.env
 **/*.crt
 **/*.key
 **/*.pem
+**/*.md

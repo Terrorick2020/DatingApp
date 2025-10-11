@@ -1,4 +1,4 @@
-# Используем Alpine для меньшего размера образа
+# Dockerfile для создания образа nginx с Brotli для DockerHub
 FROM nginx:alpine
 
 # Устанавливаем зависимости для сборки nginx с Brotli
@@ -10,6 +10,7 @@ RUN apk add --no-cache --virtual .build-deps \
     libc-dev \
     wget \
     git \
+    cmake \
     && apk add --no-cache \
     pcre \
     zlib
@@ -93,13 +94,13 @@ RUN mkdir -p /var/cache/nginx/client_temp \
     /var/cache/nginx/proxy \
     /var/cache/nginx/temp
 
-# Копируем конфигурацию
-COPY ./nginx.conf /etc/nginx/nginx.conf
-
 # Очищаем временные файлы
 RUN apk del .build-deps \
     && rm -rf /tmp/* \
     && rm -rf /var/cache/apk/*
+
+# Устанавливаем права
+RUN chown -R nginx:nginx /var/cache/nginx
 
 EXPOSE 80 443
 

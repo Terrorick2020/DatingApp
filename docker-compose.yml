@@ -91,14 +91,14 @@ services:
       - client/.env
 
   proxy:
-    build: ./nginx
+    image: ${DOCKER_USER}/nginx-brotli:latest
     restart: unless-stopped
     depends_on:
       - api
       - client
     networks:
-       planner_network:
-         aliases:
+      planner_network:
+        aliases:
           - api
           - client
           - ws
