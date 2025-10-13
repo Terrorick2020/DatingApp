@@ -17,9 +17,9 @@ RUN apk add --no-cache --virtual .build-deps \
 # Скачиваем и собираем nginx с модулем Brotli
 WORKDIR /tmp
 
-# Скачиваем исходники nginx
-RUN wget http://nginx.org/download/nginx-1.24.0.tar.gz \
-    && tar -xzf nginx-1.24.0.tar.gz
+# Скачиваем исходники nginx (обновлено до 1.25.5)
+RUN wget http://nginx.org/download/nginx-1.25.5.tar.gz \
+    && tar -xzf nginx-1.25.5.tar.gz
 
 # Скачиваем модуль Brotli
 RUN git clone https://github.com/google/ngx_brotli.git
@@ -33,8 +33,8 @@ RUN mkdir out && cd out \
     && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF .. \
     && make -j$(nproc)
 
-# Собираем nginx с модулем Brotli
-WORKDIR /tmp/nginx-1.24.0
+# Собираем nginx с модулем Brotli (без HTTP/3)
+WORKDIR /tmp/nginx-1.25.5
 RUN ./configure \
     --prefix=/etc/nginx \
     --sbin-path=/usr/sbin/nginx \
@@ -70,8 +70,6 @@ RUN ./configure \
     --with-http_stub_status_module \
     --with-http_sub_module \
     --with-http_v2_module \
-    --with-http_v3_module \
-    --with-http_quic_module \
     --with-mail \
     --with-mail_ssl_module \
     --with-stream \
