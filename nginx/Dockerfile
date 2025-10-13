@@ -22,7 +22,9 @@ RUN wget http://nginx.org/download/nginx-1.25.5.tar.gz \
     && tar -xzf nginx-1.25.5.tar.gz
 
 # Скачиваем модуль Brotli
-RUN git clone https://github.com/google/ngx_brotli.git
+RUN git clone https://github.com/google/ngx_brotli.git \
+    && cd /tmp/ngx_brotli \
+    && git submodule update --init --recursive
 
 # Скачиваем библиотеку Brotli
 RUN git clone https://github.com/google/brotli.git
