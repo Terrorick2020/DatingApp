@@ -8,11 +8,14 @@ RUN apk add --no-cache --virtual .build-deps \
     pcre-dev \
     zlib-dev \
     libc-dev \
+    openssl-dev \
+    pkgconfig \
     wget \
     git \
     && apk add --no-cache \
     pcre \
-    zlib
+    zlib \
+    openssl
 
 # Скачиваем и собираем nginx с модулем Brotli
 WORKDIR /tmp
