@@ -86,7 +86,7 @@ services:
       - VITE_API_URL=https://3dating.fun/api
       - VITE_WS_URL=wss://3dating.fun
     ports:
-      - '4178:80'
+      - '4178:4178'
     env_file:
       - client/.env
 
