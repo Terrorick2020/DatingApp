@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Ошибка сервера</title>
+		<style>
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+					sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				margin: 0;
+				padding: 0;
+				min-height: 100vh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			.error-container {
+				background: white;
+				border-radius: 20px;
+				padding: 40px;
+				box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+				text-align: center;
+				max-width: 500px;
+				margin: 20px;
+			}
+			.error-code {
+				font-size: 72px;
+				font-weight: bold;
+				color: #667eea;
+				margin: 0;
+				line-height: 1;
+			}
+			.error-message {
+				font-size: 24px;
+				color: #333;
+				margin: 20px 0;
+			}
+			.error-description {
+				font-size: 16px;
+				color: #666;
+				margin: 20px 0;
+				line-height: 1.5;
+			}
+			.retry-button {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				padding: 15px 30px;
+				border-radius: 25px;
+				font-size: 16px;
+				cursor: pointer;
+				margin-top: 20px;
+				transition: transform 0.2s;
+			}
+			.retry-button:hover {
+				transform: translateY(-2px);
+			}
+			.status-code {
+				font-size: 14px;
+				color: #999;
+				margin-top: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="error-container">
+			<div class="error-code">$status</div>
+			<div class="error-message">
+				<span ssi:if="$status = 502">Сервер временно недоступен</span>
+				<span ssi:if="$status = 503">Сервис временно недоступен</span>
+				<span ssi:if="$status = 504">Превышено время ожидания</span>
+				<span ssi:if="$status = 500">Внутренняя ошибка сервера</span>
+				<span ssi:if="$status = 404">Страница не найдена</span>
+				<span ssi:if="$status = 403">Доступ запрещен</span>
+				<span ssi:if="$status = 400">Неверный запрос</span>
+				<span ssi:if="$status = 401">Требуется авторизация</span>
+			</div>
+			<div class="error-description">
+				<span ssi:if="$status = 502"
+					>Сервер перегружен или находится на техническом обслуживании.
+					Попробуйте обновить страницу через несколько минут.</span
+				>
+				<span ssi:if="$status = 503"
+					>Сервис временно недоступен. Мы работаем над восстановлением.</span
+				>
+				<span ssi:if="$status = 504"
+					>Сервер не отвечает в течение установленного времени. Попробуйте
+					позже.</span
+				>
+				<span ssi:if="$status = 500"
+					>Произошла внутренняя ошибка сервера. Мы уже работаем над её
+					устранением.</span
+				>
+				<span ssi:if="$status = 404"
+					>Запрашиваемая страница не найдена. Проверьте правильность
+					адреса.</span
+				>
+				<span ssi:if="$status = 403"
+					>У вас нет прав для доступа к этому ресурсу.</span
+				>
+				<span ssi:if="$status = 400">Запрос содержит неверные данные.</span>
+				<span ssi:if="$status = 401"
+					>Для доступа к этому ресурсу требуется авторизация.</span
+				>
+			</div>
+			<button class="retry-button" onclick="window.location.reload()">
+				Попробовать снова
+			</button>
+			<div class="status-code">Код ошибки: $status | Время: $time_local</div>
+		</div>
+	</body>
+</html>
