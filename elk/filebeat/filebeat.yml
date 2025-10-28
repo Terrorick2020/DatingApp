@@ -1,0 +1,29 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/app/*.log
+    fields:
+      log_type: app
+    fields_under_root: true
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+
+  - type: container
+    enabled: true
+    paths:
+      - '/var/lib/docker/containers/*/*.log'
+    fields:
+      log_type: docker
+    fields_under_root: true
+    processors:
+      - add_docker_metadata:
+          host: 'unix:///var/run/docker.sock'
+
+output.logstash:
+  hosts: ['logstash:5044']
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded

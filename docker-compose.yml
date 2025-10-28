@@ -36,6 +36,12 @@ services:
       - bot/.env
     ports:
       - '9000:9000'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+        labels: 'service=bot'
 
   api:
     image: ${DOCKER_USER}/api:latest
@@ -53,6 +59,12 @@ services:
     ports:
       - '3000:3000'
       - '7755:7755'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+        labels: 'service=api'
 
   ws:
     image: ${DOCKER_USER}/ws:latest
@@ -74,6 +86,12 @@ services:
     ports:
       - '7000:7000'
       - '7756:7756'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+        labels: 'service=ws'
 
   client:
     image: ${DOCKER_USER}/client:latest
