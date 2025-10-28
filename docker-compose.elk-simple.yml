@@ -1,0 +1,30 @@
+services:
+  # Используем готовый образ с Elasticsearch и Kibana
+  elk:
+    image: sebp/elk:8.9.0
+    container_name: elk
+    ports:
+      - '5601:5601' # Kibana
+      - '9200:9200' # Elasticsearch
+      - '5044:5044' # Logstash
+    environment:
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - elk_data:/var/lib/elasticsearch
+      - ./api/logs:/var/log/app:ro
+    networks:
+      - elk
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'curl -f http://localhost:9200/_cluster/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  elk_data:
+    driver: local
+
+networks:
+  elk:
+    driver: bridge
