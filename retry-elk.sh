@@ -12,16 +12,16 @@ docker image prune -f
 
 # Пробуем скачать образы по одному
 echo "📥 Скачивание образов Elasticsearch..."
-docker pull elasticsearch:8.10.0
+docker pull docker.elastic.co/elasticsearch/elasticsearch:8.9.0
 
 echo "📥 Скачивание образов Kibana..."
-docker pull kibana:8.10.0
+docker pull docker.elastic.co/kibana/kibana:8.9.0
 
 echo "📥 Скачивание образов Logstash..."
-docker pull logstash:8.10.0
+docker pull docker.elastic.co/logstash/logstash:8.9.0
 
 echo "📥 Скачивание образов Filebeat..."
-docker pull filebeat:8.10.0
+docker pull docker.elastic.co/beats/filebeat:8.9.0
 
 # Запускаем ELK Stack
 echo "🚀 Запуск ELK Stack..."
