@@ -106,7 +106,7 @@ services:
     env_file:
       - client/.env
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4178/"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4178/', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -116,9 +116,12 @@ services:
     image: ${DOCKER_USER}/nginx-brotli:latest
     restart: unless-stopped
     depends_on:
-      - api
-      - client
-      - ws
+      api:
+        condition: service_started
+      client:
+        condition: service_healthy
+      ws:
+        condition: service_started
     networks:
       planner_network:
         aliases:
