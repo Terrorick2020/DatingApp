@@ -92,15 +92,19 @@ services:
         labels: 'service=ws'
 
   client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Передаем переменные окружения из env_file в build args
+        - VITE_BASE_URL=${VITE_BASE_URL:-https://vmestedate.ru/api}
+        - VITE_WS_URL=${VITE_WS_URL:-wss://vmestedate.ru}
     image: ${DOCKER_USER}/client:latest
     restart: unless-stopped
     depends_on:
       - api
     networks:
       - planner_network
-    environment:
-      - VITE_API_URL=https://3dating.fun/api
-      - VITE_WS_URL=wss://3dating.fun
     ports:
       - '4178:4178'
     env_file:
